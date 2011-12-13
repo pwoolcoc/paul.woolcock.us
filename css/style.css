@@ -95,15 +95,24 @@ td { vertical-align: top; }
  * Primary (Mobile-first) Styles
  * === */
 
-.h2 { font-size: 24px; }
+ body { font-family: "Palatino Linotype", Palatino, "URW Palladio L", "Book Antiqua", Baskerville, "Bookman Old Style", "Bitstream Charter",
+					"Nimbus Roman No9 L", Garamond, "New Century Schoolbook", "Century Schoolbook", "Century Schoolbook L",
+				 	Georgia, serif; }
+ .h1, .h2 { font-family: "Segoe UI", Candara, "Bitstream Vera Sans", "DejaVu Sans", "Trebuchet MS", Verdana, sans-serif; }
+ 
+ .h1 { font-size: 36px; }
+.h2 { font-size: 28px; }
+.left-side { border-bottom: solid 1px #ccc; }
 .left-side > * { margin: 10px; }
-.left-side .h1 { text-align: left;
-                 border-bottom: solid 1px #ccc; }
+.left-side .h1 { text-align: left; }
 .left-side a { text-decoration: none; }
 .left-side a:visited { color: #00e; }
 .left-side .float-right { float: right; }
 .right-side { margin: 10px; }
 .right-side .h2 { text-align: center; }
+.right-side .license { text-align: center; font-size: 75%; border-top: solid 1px #ccc; margin: 10px auto 0; padding-top: 10px; }
+footer nav ul li { border-top: solid 1px #ccc; width: 100%; text-align: center; }
+footer nav ul li a { text-decoration: none; display: block; margin: 15px 0; font-size: 20px; }
 .hide-on-mobile { display: none !important; visibility: hidden !important; }
 .hide-on-desktop { display: block !important; visibility: visible !important; }
 
@@ -119,11 +128,14 @@ td { vertical-align: top; }
 
 html,body { height: 100%; }
 
+/*.left-side { background: url(/images/ricepaper.png) repeat transparent; }*/
+
 .left-side > * { margin: 0; }
 
 .h1, .h2 { font-size: 32px; margin-bottom: 21px; }
 
-.left-side { position: fixed; width: 275px; min-height: 100%;  border-right: solid 3px #aaa; float: left; }
+.left-side { position: fixed; width: 275px; min-height: 100%;  border-right: solid 3px #aaa; float: left;
+	 			border-bottom: none; }
 .right-side { width: 558px; float: left; margin: 0 0 0 300px; }
 
 .left-side .h1 { margin-top: 50px; margin-right: 25px; text-align: right; border-bottom: none; }
@@ -138,7 +150,8 @@ nav ul li { text-align: right; margin-right: 25px; }
 /* ===
  * Non-semantic helper classes
  * === */
-
+ .italic { font-style: italic; }
+ 
 /* My Styles here */
 
 .ir { display: block; border: 0; text-indent: -999em; overflow: hidden; background-color: transparent; background-repeat: no-repeat; text-align: left; direction: ltr; *line-height: 0; }
