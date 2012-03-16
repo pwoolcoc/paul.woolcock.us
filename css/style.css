@@ -101,7 +101,7 @@ td { vertical-align: top; }
 
 
 pre { background-color: #eee; }
-code { font-size: .9em; }
+code { font-size: .9em; background-color: #eee; }
  .h1, .h2 { font-family: "Segoe UI", Candara, "Bitstream Vera Sans", "DejaVu Sans", "Trebuchet MS", Verdana, sans-serif; }
  
  .h1 { font-size: 36px; }
