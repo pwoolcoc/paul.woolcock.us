@@ -1,4 +1,8 @@
-auto: true
-permalink: /blog/:year/:month/:title
+auto: false
+permalink: /posts/:title
 pygments: true
 author: Paul Woolcock
+url: http://paulwoolcock.com
+exclude:
+  - Makefile
+
