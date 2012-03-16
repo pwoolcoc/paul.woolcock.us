@@ -31,6 +31,7 @@
 	<div class="italic">
 	- <span class="signature" property="dc:creator">{% if page.author %}{{ page.author }}{% else %}{{ site.author }}{% endif %}</span>, <span property="dc:date">{{ page.date | date_to_string }}</span>
 	</div>
+    <a href="/changelogs/{{ page.slug }}.txt">Changelog</a>
 	<div class="license">
 		<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">
 			<img alt="Creative Commons License" style="border-width:0" src="http://i.creativecommons.org/l/by-sa/3.0/88x31.png" /></a>

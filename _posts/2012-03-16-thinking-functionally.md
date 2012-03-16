@@ -2,13 +2,14 @@
 layout: post
 description: In which I realize that working in a functional language is much different from working in imperative languages.
 title: Thinking Functionally
+slug: thinking-functionally
 ---
 
 ## Easy problem made hard
 
-I have been messing around with Clojure quite a bit lately, and have been enjoying
-the challenges that come from learning a programming language that uses a different
-paradigm than what I am used to.
+I have been messing around with [Clojure](http://clojure.org) quite a bit
+lately, and have been enjoying the challenges that come from learning a
+programming language that uses a different paradigm than what I am used to.
 
 Today, I was messing around with Clojure's java interop and writing some Swing
 stuff.  I won't mention the project yet, because I am still kicking it around,
