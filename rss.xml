@@ -11,6 +11,7 @@ layout: nil
         <lastBuildDate>{{ site.time | date_to_xmlschema }}</lastBuildDate>
         {% for post in site.posts limit:20 offset:0 %}
         <item>
+            <title>{{ post.title }}</title>
             <description>{{ post.description }}</description>
             <pubDate>{{ post.date | date_to_xmlschema }}</pubDate>
             <guid isPermaLink="true">{{ site.url }}{{ post.url }}</guid>
