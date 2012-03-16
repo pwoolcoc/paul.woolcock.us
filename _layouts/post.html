@@ -13,13 +13,13 @@
   <meta property="og:title" content="{{ page.title }}">
   <meta property="og:description" content="{{ page.content | strip_html | strip_newlines | truncatewords:100 }}">
   <meta property="og:image" content="{{ page.image }}">
-  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="/css/style.css">
   <script src="js/libs/modernizr-2.0.6.min.js"></script>
 </head>
 <body>
   <div class="left-side">
     <span class="hide-on-desktop float-right"><a href="#mobile-menu">Menu</a></span>
-    <h1 class="h1"><a href="/">Paul Woolcock</a></h1>
+    <!--<h1 class="h1"><a href="/">Paul Woolcock</a></h1>-->
     <nav class="hide-on-mobile">
       <ul>
         {% include navigation.html %}
@@ -27,7 +27,7 @@
     </nav>
   </div>
   <div xmlns:dc="http://purl.org/dc/elements/1.1/" class="right-side">
-    <h1 property="dc:title" class="h2">{{ page.title }}</h1>
+    <h1 property="dc:title" class="h1">{{ page.title }}</h1>
     {{ content }}<br/>
 	<div class="italic">
 	- <span class="signature" property="dc:creator">{% if page.author %}{{ page.author }}{% else %}{{ site.author }}{% endif %}</span>, <span property="dc:date">{{ page.date | date_to_string }}</span>
@@ -35,10 +35,6 @@
 	<div class="license">
 		<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">
 			<img alt="Creative Commons License" style="border-width:0" src="http://i.creativecommons.org/l/by-sa/3.0/88x31.png" /></a>
-			<br />
-			This <span xmlns:dct="http://purl.org/dc/terms/" href="http://purl.org/dc/dcmitype/Text" rel="dct:type">work</span> by 
-			<span xmlns:cc="http://creativecommons.org/ns#" property="cc:attributionName">Paul Woolcock</span> is licensed under a 
-			<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">Creative Commons Attribution-ShareAlike 3.0 Unported License</a>
 	</div>
   </div>
   <footer>

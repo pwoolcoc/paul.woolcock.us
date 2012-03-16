@@ -1,14 +1,15 @@
 ---
 layout: default
 title: paulwoolcock.com
+heading: Paul Woolcock
 ---
-<h1 class="h2">Recent Posts</h1>
+<!--<h1 class="h1">Paul Woolcock</h1>-->
 <div class="posts" xmlns:dc="http://purl.org/dc/elements/1.1/">
 {% for post in site.posts %}
-	<div about="{{ post.url }}">
-		<h2 class="h2"><a property="dc:title" href="{{ post.url }}">{{ post.title }}</a></h2>
-		<p>
-			{{ post.content | truncatewords:100 }}
+	<div class="post" about="{{ post.url }}">
+		<h2 class="h3"><a property="dc:title" href="{{ post.url }}">{{ post.title }}</a></h2>
+		<p class="hide-on-mobile">
+			{{ post.description }}
 		</p>
 	</div>
 {% endfor %}
