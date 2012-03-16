@@ -11,8 +11,8 @@ html { font-size: 100%; overflow-y: scroll; -webkit-text-size-adjust: 100%; -ms-
 body { margin: 0; font-size: 1em; line-height: 1.4; }
 body, button, input, select, textarea { font-family: sans-serif; color: #222; }
 
-::-moz-selection { background: #fe57a1; color: #fff; text-shadow: none; }
-::selection { background: #fe57a1; color: #fff; text-shadow: none; }
+::-moz-selection { background: #cccccc; color: #fff; text-shadow: none; }
+::selection { background: #cccccc; color: #fff; text-shadow: none; }
 
 /* ===
  * Links
@@ -98,6 +98,9 @@ td { vertical-align: top; }
  body { font-family: "Palatino Linotype", Palatino, "URW Palladio L", "Book Antiqua", Baskerville, "Bookman Old Style", "Bitstream Charter",
 					"Nimbus Roman No9 L", Garamond, "New Century Schoolbook", "Century Schoolbook", "Century Schoolbook L",
 				 	Georgia, serif; }
+
+
+code { font-size: .9em; }
  .h1, .h2 { font-family: "Segoe UI", Candara, "Bitstream Vera Sans", "DejaVu Sans", "Trebuchet MS", Verdana, sans-serif; }
  
  .h1 { font-size: 36px; }
@@ -139,7 +142,7 @@ html,body { height: 100%; }
 
 .left-side { position: fixed; width: 200px; min-height: 100%;  border-right: solid 3px #aaa; float: left;
 	 			border-bottom: none; }
-.right-side { width: 568px; float: left; margin: 0 0 0 250px; }
+.right-side { width: 668px; float: left; margin: 0 0 0 250px; }
 
 .posts .post p { margin-top: 0; margin-bottom: 10px; }
 

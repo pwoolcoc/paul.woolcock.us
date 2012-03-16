@@ -1,4 +1,8 @@
-# Thinking functionally
+---
+layout: post
+description: In which I realize that working in a functional language is much different from working in imperative languages.
+title: Thinking Functionally
+---
 
 ## Easy problem made hard
 
@@ -17,17 +21,19 @@ The problem boiled down to this: lets say you need an array of objects that are
 mostly the same, except for the fact that each object includes an incremented
 integer.  So, for fun, let's say we want to end up with this:
 
-    '("This is number: 0" "This is number: 1" "This is number: 2" "This is number: 3" "This is number: 4")
+    '("This is number: 0" "This is number: 1" "This is number: 2"
+      "This is number: 3" "This is number: 4")
 
 Easy, right?  Of course, my imperative brain immediately starting
 thinking of what kind of looping construct I would need to use to get this
-result.  My first thought was that there had to be a function in clojure.core
+result.  My first thought was that there had to be a function in `clojure.core`
 that could do this.  Of course, I started looking in the wrong direction.
 My first thought was something like this:
 
     ; Clojure experts: Please don't cringe too hard, you'll pull something
 
-    (defn make-string [num] (format "This is number: %d" num))
+    (defn make-string [num]
+	  (format "This is number: %d" num))
 
     (def string-list
       (into '()
@@ -37,7 +43,8 @@ My first thought was something like this:
             (recur (+ i 1))))))
 
 Of course, this is pretty obviously a case of trying to apply imperative thinking
-to a functional language.
+to a functional language.  I'm telling the computer *how* to do
+something instead of telling it *what* to do.
 
 I also did some messing around with the `repeatedly` function, as well as the
 `take-while` function, but I am not going to include those examples here, as I
