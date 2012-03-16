@@ -15,6 +15,7 @@ layout: nil
             <description>{{ post.description }}</description>
             <pubDate>{{ post.date | date_to_xmlschema }}</pubDate>
             <guid isPermaLink="true">{{ site.url }}{{ post.url }}</guid>
+            <link>{{ site.url }}{{ post.url }}</link>
         </item>
         {% endfor %}
     </channel>
