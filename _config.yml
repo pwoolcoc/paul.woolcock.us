@@ -2,7 +2,7 @@ auto: false
 permalink: /posts/:title.html
 pygments: true
 author: Paul Woolcock
-url: http://paulwoolcock.com
+url: http://www.paulwoolcock.com
 exclude:
   - Makefile
 
