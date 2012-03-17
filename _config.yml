@@ -1,5 +1,5 @@
 auto: false
-permalink: /posts/:title
+permalink: /posts/:title.html
 pygments: true
 author: Paul Woolcock
 url: http://paulwoolcock.com
