@@ -13,7 +13,7 @@ tarball: site
 
 deploy: tarball
 	scp -i $(IDENTITY_FILE) $(TAR_GZ) $(AWS_USER)@$(AWS_SERVER):/tmp/
-	ssh -t -i $(IDENTITY_FILE) $(AWS_USER)@$(AWS_SERVER) 'cd /srv/paulwoolcock.com && /usr/bin/sudo /bin/tar -xzvf $(TAR_GZ)'
+	ssh -t -i $(IDENTITY_FILE) $(AWS_USER)@$(AWS_SERVER) 'cd /srv/paulwoolcock.com && /usr/bin/sudo /bin/tar -xzvmf $(TAR_GZ)'
 
 site:
 	jekyll
