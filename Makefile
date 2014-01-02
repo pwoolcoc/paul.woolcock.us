@@ -1,22 +1,20 @@
 
 SITEDIR=_site
-IDENTITY_FILE=$(HOME)/.awskeys/pwoolcoc.pem
-TAR_GZ=/tmp/paulwoolcock.com.tar.gz
-AWS_USER=ec2-user
-AWS_SERVER=184.73.167.64
+TAR_GZ=/tmp/paul.woolcock.us.tar.gz
+SCP_CMD=scp $(TAR_GZ) prgmr:/tmp/
 
 server:
-	jekyll --auto --server --url http://0.0.0.0:4000
+	jekyll serve -w
 
 tarball: site
 	cd $(SITEDIR) && tar -Pczf $(TAR_GZ) .
 
 deploy: tarball
-	scp -i $(IDENTITY_FILE) $(TAR_GZ) $(AWS_USER)@$(AWS_SERVER):/tmp/
-	ssh -t -i $(IDENTITY_FILE) $(AWS_USER)@$(AWS_SERVER) 'cd /srv/paulwoolcock.com && /usr/bin/sudo /bin/tar -xzvmf $(TAR_GZ)'
+	$(SCP_CMD)
+	ssh -t prgmr 'cd /usr/share/nginx/www/www.paulwoolcock.com && /bin/tar -xzvmf $(TAR_GZ) && sudo nginx -s reload'
 
 site:
-	jekyll
+	jekyll build
 
 clean:
 	[ -d $(SITEDIR) ] && rm -rf $(SITEDIR)
