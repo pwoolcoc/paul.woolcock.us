@@ -1,8 +1,8 @@
-auto: false
 permalink: /posts/:title.html
+markdown: redcarpet
 pygments: true
 author: Paul Woolcock
-url: http://www.paulwoolcock.com
+url: http://paul.woolcock.us
 exclude:
   - Makefile
 

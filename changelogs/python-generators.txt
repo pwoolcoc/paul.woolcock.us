@@ -1,0 +1,9 @@
+Simple Python Generator Example
+
+CHANGES
+-------
+
+Version 1 / 2013-03-18
+``````````````````````
+
+- Initial posting
