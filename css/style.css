@@ -119,6 +119,7 @@ footer nav ul li { border-top: solid 1px #ccc; width: 100%; text-align: center; 
 footer nav ul li a { text-decoration: none; display: block; margin: 15px 0; font-size: 20px; }
 .hide-on-mobile { display: none !important; visibility: hidden !important; }
 .hide-on-desktop { display: block !important; visibility: visible !important; }
+.light-grey { color: rgba(190, 190, 190, 0.8); }
 
 
 /* ===
