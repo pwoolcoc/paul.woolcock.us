@@ -3,6 +3,12 @@ SITEDIR=_site
 TAR_GZ=/tmp/paul.woolcock.us.tar.gz
 SCP_CMD=scp $(TAR_GZ) prgmr:/tmp/
 
+new:
+	touch $(PWD)/_drafts/$(shell date +"%Y-%m-%d")-new-post.md
+	gvim -f $(PWD)/_drafts/$(shell date +"%Y-%m-%d")-new-post.md
+
+# TODO: publish task
+
 server:
 	jekyll serve -w
 
