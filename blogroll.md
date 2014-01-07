@@ -4,8 +4,6 @@ title: Blogroll
 heading: Blogroll
 ---
 
-<h2 class="h2">Tech and tech-related blogs I read</h2>
-
 * [antirez](http://antirez.com)
 
   Blog of Salvatore Sanfilippo, the creator of one of my favorite pieces
@@ -27,13 +25,9 @@ heading: Blogroll
 
   Creator of [Instapaper](http://www.instapaper.com/).
 
-* [inessential.com](http://inessential.com/)
-
-  Blog of Brent Simmons, creator of [NetNewsWire](http://netnewswireapp.com/).
-
 * [Rands in Repose](http://www.randsinrepose.com/)
 
-  Writings about software construction.
+  Writings about management & software construction.
 
 * [Literate Programming](http://blog.steveklabnik.com/)
 
@@ -42,11 +36,4 @@ heading: Blogroll
 * [homoiconic](https://github.com/raganwald/homoiconic)
 
   Raganwald's writings about code.
-
-<h2 class="h2">Other cool stuff</h2>
-
-* [Andrew Woolcock](http://andrewpomorphic.tumblr.com/)
-
-  My brother's adventures in being a veterinarian.
-
 
