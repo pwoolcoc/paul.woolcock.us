@@ -30,20 +30,20 @@ points out the similarities between how you read this math expression,
 and how you read list comp.
 
     >>> example_math_expr = u"Q = { a/b | a,b ∈ Z, b ≠ 0 }"
-    >>> TOKENS = {
-    ...         r'\w+': u'IDENTIFIER',
-    ...         r'\d+': u'NUMBER',
-    ...         u'=': u'EQUAL',
-    ...         u'≠': u'NOTEQUAL',
-    ...         r'[{}]': u'BRACE',
-    ...         r'[+-*/]': u'OPERATOR',
-    ...         u'|': u'SUCH_THAT',
-    ...         u'∈': u'MEMBER',
-    ...         u'∉': u'NOT_MEMBER'
-    ...         u'⊆': u'SUBSET',
-    ...         u'∅': u'NULL',
-    ...         u',': u'COMMA'
-    ... }
+    >>> TOKENS = (
+    ...         r'\w', u'IDENTIFIER',
+    ...         r'\d+', u'NUMBER',
+    ...         u'=', u'EQUAL',
+    ...         u'≠', u'NOTEQUAL',
+    ...         r'[{}]', u'BRACE',
+    ...         r'[+-*/]', u'OPERATOR',
+    ...         u'|', u'SUCH_THAT',
+    ...         u'∈', u'MEMBER',
+    ...         u'∉', u'NOT_MEMBER'
+    ...         u'⊆', u'SUBSET',
+    ...         u'∅', u'NULL',
+    ...         u',', u'COMMA'
+    ... )
     >>> def tokenize(char):
     ...     return #lookup(TOKENS, char)
     ...
