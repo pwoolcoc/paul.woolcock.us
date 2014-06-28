@@ -1,4 +1,9 @@
-2014-06-27
-``````````
+Elixir Pipe
+
+CHANGES
+=======
+
+Version 1 / 2014-06-27
+``````````````````````
 
 - Initial commit
