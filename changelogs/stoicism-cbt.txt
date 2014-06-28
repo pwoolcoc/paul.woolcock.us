@@ -3,8 +3,12 @@ Stoicism & CBT
 CHANGES
 -------
 
+Version 2 / 2014-06-27
+``````````````````````
+
+- Remove "more to come," as I never wrote any more
+
 Version 1 / 2014-01-01
 ``````````````````````
 
 - Initial posting
-
