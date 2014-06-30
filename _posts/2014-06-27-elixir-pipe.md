@@ -16,9 +16,11 @@ You see how we had to write the functions in the reverse order than they are act
 
 Elixir solves this readability issue through use of the the Pipe macro. Here is the code:
 
-    iex> 0..9 |> Stream.map(&(&1 + 0.5)) 
-    ....      |> Stream.map(fn x -> x * x * x end) 
-    ....      |> Stream.map(&(&1 * 2))
-    ....      |> Stream.map(fn x -> IO.puts x end)
+    iex(1)> 0..9 |>
+    ...(1)      Stream.map(&(&1 + 0.5)) |> 
+    ...(1)      Stream.map(fn x -> x * x * x end) |>
+    ...(1)      Stream.map(&(&1 * 2)) |>
+    ...(1)      Enum.into([])
+    [0.25, 6.75, 31.25, 85.75, 182.25, 332.75, 549.25, 843.75, 1228.25, 1714.75]    
 
 Isn't that so much better? Even more, the Stream module implements lazy iterators, so we get the same benefits that the python generators give us, in terms of memory usage.
