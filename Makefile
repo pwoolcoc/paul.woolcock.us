@@ -1,7 +1,7 @@
 
 SITEDIR=_site
 TAR_GZ=/tmp/paul.woolcock.us.tar.gz
-SCP_CMD=scp $(TAR_GZ) prgmr:/tmp/
+SCP_CMD=scp $(TAR_GZ) paul.woolcock.us:/tmp/
 
 new: TITLE=no-title
 new:
@@ -18,7 +18,7 @@ tarball: site
 
 deploy: tarball
 	$(SCP_CMD)
-	ssh -t prgmr 'cd /usr/share/nginx/www/www.paulwoolcock.com && /bin/tar -xzvmf $(TAR_GZ) && sudo nginx -s reload'
+	ssh -t paul.woolcock.us 'cd /usr/share/nginx/www/paul.woolcock.us && /bin/tar -xzvmf $(TAR_GZ) && sudo nginx -s reload'
 
 site:
 	jekyll build
