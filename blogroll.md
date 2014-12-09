@@ -4,7 +4,7 @@ title: Blogroll
 heading: Blogroll
 ---
 
-* [This week in Rust](http://www.this-week-in-rust.org)
+* [This week in Rust](http://this-week-in-rust.org)
 
   Weekly report about the state of [Rust](http://rust-lang.org).
 
