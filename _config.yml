@@ -1,6 +1,6 @@
 permalink: /posts/:title.html
 markdown: redcarpet
-pygments: true
+highlighter: pygments
 author: Paul Woolcock
 url: http://paul.woolcock.us
 exclude:

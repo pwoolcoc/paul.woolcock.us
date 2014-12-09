@@ -1,0 +1,13 @@
+html {
+    font-family: "Source Code Pro", Menlo, Monaco, Consolas, "DejaVu Sans Mono", Inconsolata, "Courier New", monospace;
+}
+body {
+    width: 960px;
+    margin: 0 auto;
+}
+blockquote {
+    text-align: center;
+}
+dt {
+    margin-top: 15px;
+}

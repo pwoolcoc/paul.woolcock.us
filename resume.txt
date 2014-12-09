@@ -1,0 +1,115 @@
+Paul Woolcock
+=============
+
+* * * * *
+
+  Specialties: Perl, Python, Javascript, Go, Erlang  
+  BS in Computer Science from the University of Michigan-Flint
+
+* * * * *
+
+Experience
+----------
+
+July 2012 - Present
+    Software Engineer at Barracuda Networks (Ann Arbor, MI).
+
+    Wrote Perl, Javascript, Erlang and Go building the Barracuda
+    Appliance Control, the central management service for Barracuda
+    appliances.
+
+September 2009 - July 2012
+    Web Software Developer at the University of Michigan-Flint (Flint,
+    MI).
+
+    -   Implemented a custom Events Management system using Python.
+    -   Implemented a Python API wrapper for the campus Course Catalog
+        API.
+    -   Implemented a custom e-commerce solution using PHP and
+        Javascript
+    -   Developed Java/XSLT components for an Autonomy/Interwoven CMS
+        used on campus.
+    -   Implemented a Microsoft SharePoint 2010 system across campus,
+        and held training sessions for users.
+
+February 2009 - September 2009
+    Student Web Software Developer at the University of Michigan-Flint
+    (Flint, MI).
+
+    -   Developed a mobile version of the campus Faculty/Staff phonebook
+        using jQuery mobile.
+    -   Helped develop an interactive campus map using the Google Maps
+        API.
+    -   Provided training and support for an Autonomy/Interwoven CMS.
+
+June 2008 - August 2009
+    Helpdesk Technician at Genesee County Community Mental Health
+    (Flint, MI).
+
+    -   Provided desktop support to the staff of GCCMH both over the
+        phone and in person.
+    -   Assisted in the setup and imaging of new agency computers.
+    -   Performed basic Active Directory administration.
+
+Skills
+------
+
+Software Engineering
+    Expert in Perl, Python, and Javascript.  
+    Fluent in Erlang, Go, and PHP.  
+    Proficient in C, Java, Clojure, and C++.  
+    Experienced with web development frameworks like Django, Flask, and
+    Laravel.  
+    Experienced with testing frameworks like Nose and JUnit.  
+    Experienced with version control systems such as Git and
+    Mercurial.  
+    Experienced with CI systems like Jenkins and Travis CI.
+
+Web Development
+    Have developed applications using Backbone.js, and have dabbled with
+    Ember.js and Angular.js.  
+    Fluent in developing cross-browser, W3C standards-compliant websites
+    and web applications.  
+    Proficient in using external APIs such as those provided by
+    Facebook, Twitter, and Google.
+
+Systems Administration
+    Familiar with configuring Linux distributions such as Red Hat
+    Enterprise Linux, CentOS, Debian, and Ubuntu.  
+    Experienced in administrating web servers such as Apache2, Nginx,
+    and IIS, as well as WSGI application servers like Gunicorn, uWSGI,
+    and mod_wsgi.  
+    Experienced with in-memory data systems like Redis and Memcached.
+    Experienced with setting up and administrating MySQL and PostgreSQL
+    databases.  
+    Experienced with build systems such as GNU Make and CMake.  
+    Experienced with using Puppet and Ansible to automate deployment.  
+
+Education
+---------
+
+April 2012
+    BS in Computer Science at the University of Michigan-Flint (Flint,
+    MI).
+
+    Concentration: Software Engineering  
+    Minor: Mathematics
+
+    For Senior Capstone project, designed and wrote an iPad/iPod-based
+    hospital “Call Button” system.
+
+May 2005
+    BA in Music at Alma College (Alma, MI).
+
+    Concentration: Classical Guitar
+
+Open Source
+-----------
+
+My open source work can be found on my github account at
+https://github.com/pwoolcoc
+
+* * * * *
+
+  paul@woolcock.us | 8105169070  
+  1450 Schafer Dr, Burton MI, 48509
