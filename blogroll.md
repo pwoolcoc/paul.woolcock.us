@@ -4,6 +4,10 @@ title: Blogroll
 heading: Blogroll
 ---
 
+* [This week in Rust](http://www.this-week-in-rust.org)
+
+  Weekly report about the state of [Rust](http://rust-lang.org).
+
 * [antirez](http://antirez.com)
 
   Blog of Salvatore Sanfilippo, the creator of one of my favorite pieces
@@ -12,10 +16,6 @@ heading: Blogroll
 * [Neopythonic](http://neopythonic.blogspot.com/)
 
   Guido's blog.
-
-* [Shedding Bikes](http://sheddingbikes.com/)
-
-  Zed Shaw's blog.
 
 * [Adrian Holovaty](http://www.holovaty.com/)
 
@@ -32,8 +32,4 @@ heading: Blogroll
 * [Literate Programming](http://blog.steveklabnik.com/)
 
   Steve Klabnik's blog.  He does a lot of hypermedia API stuff.
-
-* [homoiconic](https://github.com/raganwald/homoiconic)
-
-  Raganwald's writings about code.
 
