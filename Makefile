@@ -3,12 +3,12 @@ SITEDIR=_site
 TAR_GZ=/tmp/paul.woolcock.us.tar.gz
 SCP_CMD=scp $(TAR_GZ) paul.woolcock.us:/tmp/
 
+all: site
+
 new: TITLE=no-title
 new:
 	printf -- "---\nlayout: post\ntitle: ___\ndescription: ___\nslug: $(TITLE)\n---\n" > $(PWD)/_drafts/$(shell date +"%Y-%m-%d")-$(TITLE).md
-	gvim -f $(PWD)/_drafts/$(shell date +"%Y-%m-%d")-$(TITLE).md
-
-# TODO: publish task
+	gvim -f $(PWD)/_drafts/$(shell date +"%Y-%m-%d")-$(TITLE).md &
 
 server:
 	jekyll serve -w
