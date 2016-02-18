@@ -1,0 +1,17 @@
+Survey of licenses used by Rust projects of crates.io
+
+CHANGES
+=======
+
+Version 2 / 2015-09-25
+``````````````````````
+
+- Change the true division to integer division when checking for
+  the response status code
+
+
+Version 1 / 2015-09-24
+``````````````````````
+
+- Initial commit
+

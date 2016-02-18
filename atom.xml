@@ -1,0 +1,766 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <title>Paul Woolcock</title>
+    <link href="http://paul.woolcock.us/atom.xml" rel="self"/>
+    <link href="http://paul.woolcock.us/"/>
+    <updated>2016-02-18T15:00:00-05:00</updated>
+    <id>http://paul.woolcock.us</id>
+    <author>
+        <name>Paul Woolcock</name>
+        <email>pwoolcoc@gmail.com</email>
+    </author>
+    
+    <entry>
+        <title>Survey of licenses used by Rust projects on crates.io</title>
+        <link href="http://paul.woolcock.us/posts/crates-io-license-survey.html"/>
+        <updated>2015-09-24T00:00:00-04:00</updated>
+        <id>http://paul.woolcock.us/posts/crates-io-license-survey</id>
+        <content type="html">&lt;p&gt;So I am working on a feature that I hope to get merged into &lt;code class=&quot;highlighter-rouge&quot;&gt;cargo&lt;/code&gt;,
+Rusts package manager. The feature would allow a developer to specify a
+license to add to a new project (or all new projects), and automatically
+put that information in their &lt;code class=&quot;highlighter-rouge&quot;&gt;Cargo.toml&lt;/code&gt;, as well as add the &lt;code class=&quot;highlighter-rouge&quot;&gt;LICENSE&lt;/code&gt;
+file to their project.&lt;/p&gt;
+
+&lt;p&gt;So I got to the point where the feature was working, but I had to figure out
+how many, and which licenses, to support in the tool. My intuition was to
+include: MIT, BSD (2- and 3-clause), Apache-2.0, and GPL, both -2.0 and -3.0.&lt;/p&gt;
+
+&lt;p&gt;However, we are all about data these days, right? So forget my intuition, let’s
+see what actual Rustaceans are using!&lt;/p&gt;
+
+&lt;h2 id=&quot;process&quot;&gt;Process&lt;/h2&gt;
+
+&lt;p&gt;So my first step was to collect some data from &lt;code class=&quot;highlighter-rouge&quot;&gt;crates.io&lt;/code&gt;, the central repository
+for Rust crates. You can easily get an index of all the crates on the site by
+using the index that the Cargo team has on github:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;git clone https://github.com/crates.io-index
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cd &lt;/span&gt;crates.io-index&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Now, lets query the &lt;code class=&quot;highlighter-rouge&quot;&gt;crates.io&lt;/code&gt; API for information about these crates.
+I ended up saving the information to a file, though you don’t necessarily have to
+do that. It helped with iterating on the data, as I didn’t have to repeatedly hit
+crates.io’s servers for the info (it saved them bandwidth, and me time, since
+crates.io &lt;em&gt;will&lt;/em&gt; cut you off if you make too many requests in too short a time).&lt;/p&gt;
+
+&lt;p&gt;Here is the script I used to gather the data:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;csv&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;os&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;time&lt;/span&gt;
+
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;requests&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;CRATE_URL&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;https://crates.io/api/v1/crates/{crate_name}&quot;&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;INDEX_PATH&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;/path/to/crates.io-index&quot;&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;walk_index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;path&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fnames&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;os&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;walk&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;path&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fname&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fnames&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;not&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fname&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;config.json&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;yield&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fname&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;get_license&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;crate_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;req&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;requests&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;CRATE_URL&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;crate_name&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;crate_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;req&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;status_code&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;requests&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;codes&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ok&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;j&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;req&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;json&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;crate&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;j&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&#39;crate&#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;license&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;crate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&#39;license&#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;license&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;is&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;not&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;None&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;license&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;license&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;lower&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;license&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;except&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;KeyError&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;None&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;except&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;ValueError&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;None&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;None&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;with&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;license.csv&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;w&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;newline&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;csvfile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;writer&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;csv&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;writer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;csvfile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dialect&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&#39;excel&#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;crate_name&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;walk_index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;INDEX_PATH&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;license&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;get_license&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;crate_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;writer&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;writerow&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;([&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;crate_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;license&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;# The crates.io API will cut you off if you&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;# don&#39;t throttle your requests a bit&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;time&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;sleep&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;0.5&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Ok, so now we have a nice &lt;code class=&quot;highlighter-rouge&quot;&gt;.csv&lt;/code&gt; file with the name of the crate and the license string it
+uses. Now, lets re-read that information back in, and count licenses:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-python&quot; data-lang=&quot;python&quot;&gt;&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;csv&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;collections&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Counter&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;license_counter&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Counter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;with&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;license.csv&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;csvfile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;data&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;csv&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;reader&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;csvfile&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dialect&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&#39;excel&#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;crate_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;row&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;data&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;# some projects multi-license, and they almost always use a &#39;/&#39; to join&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;# the license names&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;licenses&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;row&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;split&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;/&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;license&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;licenses&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+            &lt;span class=&quot;c&quot;&gt;# we just want the general class of the license,&lt;/span&gt;
+            &lt;span class=&quot;c&quot;&gt;# so the trailing &#39;+&#39; characters are unnecessary&lt;/span&gt;
+            &lt;span class=&quot;n&quot;&gt;cleaned&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;license&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;strip&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rstrip&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;+&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cleaned&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+                &lt;span class=&quot;n&quot;&gt;license_counter&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;update&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;([&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;cleaned&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;n&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;license_counter&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;most_common&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;():&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;print&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;{x:30}{n}&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h2 id=&quot;results&quot;&gt;Results&lt;/h2&gt;
+
+&lt;p&gt;So what were the results? Well, my intuition was about half correct. The top 2
+most-used licenses were the MIT license and Apache-2.0. After that the number
+of projects using a particular license drops off considerably, with the
+BSD-3-Clause coming in 3rd. The Mozilla Public License came in 4th. I did not
+have the MPL on my list, which was obviously foolish, considering Rust is a
+Mozilla project. “non-standard” came in 5th, but that is kind of a wash because
+it appears to be a kind of “default value” that cargo (or crates.io) gives the
+project when they don’t have a “license” key in their configuration, but rather
+a “license-file” which has a path. The handful of these that I looked at were
+using MIT, but just didn’t name it in their &lt;code class=&quot;highlighter-rouge&quot;&gt;Cargo.toml&lt;/code&gt; configs. It made me
+chuckle, but the “Unlicense” came in 6th. The GPL-3.0 is at 7, and the
+BSD-2-Clause at 8th.  So all the licenses from my list were in the top 8, but
+were definitely not the top 5. Here is a table of my counts:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;    mit                           2333
+    apache-2.0                    488
+    bsd-3-clause                  63
+    mpl-2.0                       52
+    non-standard                  52
+    unlicense                     49
+    gpl-3.0                       47
+    bsd-2-clause                  40
+    cc0-1.0                       38
+    lgpl-3.0                      31
+    zlib                          26
+    isc                           24
+    wtfpl                         23
+    lgpl-2.1                      19
+    gpl-2.0                       18
+    bsl-1.0                       15
+    agpl-3.0                      9
+    aml                           4
+    cc-by-nc-4.0                  2
+    python-2.0                    2
+    apache-1.0                    1
+    agpl-1.0                      1
+    lgpl-2.0                      1
+    nlpl                          1
+    ncsa                          1
+    zlib-acknowledgement          1
+    ijg                           1
+    libpng                        1
+    mpl-2.0-no-copyleft-exception 1
+    zed                           1
+    miros                         1
+    mpl-1.1                       1
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;h2 id=&quot;conclusion&quot;&gt;Conclusion&lt;/h2&gt;
+
+&lt;p&gt;Given the results, I am probably going to take the GPL-3.0 and BSD-2-Clause out
+of my PR, and add the MPL in. The “Unlicense” seems to be slightly controversial
+(at least from the little digging I did on the internet), but I don’t want to
+exclude it while including licenses that were represented less in the data, so
+taking the top 4 instead of the top 5 seems more fair.&lt;/p&gt;
+
+&lt;p&gt;I am not sure if the cargo devs will be interested in my feature when I get a
+PR opened, but either way I enjoyed this quick little dip into the crates.io
+ecosystem.&lt;/p&gt;
+
+&lt;h4 id=&quot;notes&quot;&gt;Notes&lt;/h4&gt;
+
+&lt;p&gt;If you want to see the data I worked from, and the scripts I used, there
+is a git repo up with all the files, at
+&lt;a href=&quot;https://github.com/pwoolcoc/crates.io-license-survey&quot;&gt;https://github.com/pwoolcoc/crates.io-license-survey&lt;/a&gt;&lt;/p&gt;
+</content>
+    </entry>
+    
+    <entry>
+        <title>Goodbye 2014, Hello 2015</title>
+        <link href="http://paul.woolcock.us/posts/end-of-the-year.html"/>
+        <updated>2014-12-31T00:00:00-05:00</updated>
+        <id>http://paul.woolcock.us/posts/end-of-the-year</id>
+        <content type="html">&lt;p&gt;Well, the year is almost over. It has been…a year. Some great things,
+some terrible things, some in between, and I thought I would just jot
+down some thoughts about it.  (I probably won’t touch on any of the
+terrible things though. Read the news if you want to hear about that.)&lt;/p&gt;
+
+&lt;p&gt;Gobo turned 2 this past fall, and it has been remarkable watching what
+he has become. He has the best little personality, is (almost) always
+happy, and is really starting to get his words together. He is even
+stringing together 4-or-5 word sentences, and I’ll tell ya, you just
+have to look on with awe when he looks at you and asks a real,
+honest-to-god question. My favorite is when I emerge from the basement
+office and he asks, “Daddy, are you all done working?” with a hopeful
+look in his eyes.&lt;/p&gt;
+
+&lt;p&gt;Our 2nd child is due any day now, so it has been a bit of a rough couple
+weeks here at the Woolcock household. We never found out the sex of the
+baby, so we’ll see whether it is a
+&lt;a href=&quot;http://muppet.wikia.com/wiki/Wembley_Fraggle&quot;&gt;Wembly&lt;/a&gt; or a
+&lt;a href=&quot;http://muppet.wikia.com/wiki/Red_Fraggle&quot;&gt;Red&lt;/a&gt;. Or should it be
+&lt;a href=&quot;http://muppet.wikia.com/wiki/Boober_Fraggle&quot;&gt;Boober&lt;/a&gt; or
+&lt;a href=&quot;http://muppet.wikia.com/wiki/Mokey_Fraggle&quot;&gt;Mokey&lt;/a&gt;? We’ll see ;-).
+(probably not Boober…)&lt;/p&gt;
+
+&lt;p&gt;Having the baby due at this time meant I couldn’t go to the winter hike
+this year. Which is disappointing, to be sure, but there really isn’t a
+better reason to miss the hike than, “I am going to be a father again.”
+I do kind of hope that the baby comes either in the next day or two, or
+waits until the 6th or 7th, though I realize that is an incredibly
+selfish thing to want. I would prefer not to miss the kid’s birthday in the
+future, but I would also like to continue going on the hike after this
+year.&lt;/p&gt;
+
+&lt;p&gt;I know, I know, selfish.&lt;/p&gt;
+
+&lt;p&gt;In philisophical news, this is the year I really started implementing
+some Stoic philosophy in my everyday life. It has been a great learning
+experience, and I really seem to have made a lot of progress with my inner
+monologue. If you are so inclined, go read some Stoic philosophy. I think
+Project Gutenberg has some Seneca, and Amazon has a bunch of translations of
+Epictetus, Seneca, and Marcus Aurelius. For contemporary stuff, I enjoyed this
+book, about
+&lt;a href=&quot;http://paul.woolcock.us/posts/stoicism-cbt.html&quot;&gt;Stoicism and CBT&lt;/a&gt;,
+and I’m current enjoying
+&lt;a href=&quot;http://amzn.com/B0040JHNQG&quot;&gt;A Guide to the Good Life: The Ancient Art of Stoic Joy&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;This is also the year I started particpating in the
+&lt;a href=&quot;http://www.rust-lang.org&quot;&gt;Rust&lt;/a&gt; community. I had hung out a bit in
+&lt;a href=&quot;irc://irc.mozilla.org/#rust&quot;&gt;#rust&lt;/a&gt; a couple years ago, when the
+language was almost brand new, but lost interest at some point. This year I
+really got back into it, and started making some contributions to some
+Rust projects, including the package manager for the language,
+&lt;a href=&quot;http://crates.io&quot;&gt;Cargo&lt;/a&gt;. I really hope to be able to do more work with
+Rust in the future.&lt;/p&gt;
+
+&lt;p&gt;(I put a Rust sticker on my laptop, and got a t-shirt, so, you know, I am
+like, sooooooo committed now)&lt;/p&gt;
+
+&lt;p&gt;Oh, I almost forgot. I got a Mandolin as a gift for festivus this year.
+Anybody want to start a Bluegrass/Newgrass group? :)&lt;/p&gt;
+</content>
+    </entry>
+    
+    <entry>
+        <title>Using Rust from Perl and Julia</title>
+        <link href="http://paul.woolcock.us/posts/rust-perl-julia-ffi.html"/>
+        <updated>2014-12-23T00:00:00-05:00</updated>
+        <id>http://paul.woolcock.us/posts/rust-perl-julia-ffi</id>
+        <content type="html">&lt;p&gt;With the recent &lt;a href=&quot;https://github.com/rust-lang/rust/commit/0efafac398ff7f28c5f0fe756c15b9008b3e0534&quot;&gt;runtime removal&lt;/a&gt;,
+utilizing &lt;a href=&quot;http://rust-lang.org/&quot;&gt;Rust&lt;/a&gt; libraries from other languages has gotten even better. In
+this post I am going to take the Rust library that &lt;a class=&quot;fa fa-twitter mentions-twitter&quot; href=&quot;https://twitter.com/wycats&quot;&gt;@wycats&lt;/a&gt; used in
+&lt;a href=&quot;http://blog.skylight.io/bending-the-curve-writing-safe-fast-native-gems-with-rust/&quot;&gt;this post&lt;/a&gt;,
+and use it from both Perl 5, and &lt;a href=&quot;http://julialang.org&quot;&gt;Julia&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h2 class=&quot;h2&quot; id=&quot;getting-started&quot;&gt;Getting started&lt;/h2&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;cargo new points
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cd &lt;/span&gt;points
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;mkdir perl julia
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;touch Makefile perl/points.pl julia/points.jl&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Fix cargo to create a .so instead of a .rlib:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-toml&quot; data-lang=&quot;toml&quot;&gt;&lt;span class=&quot;c&quot;&gt;# Cargo.toml&lt;/span&gt;
+&lt;span class=&quot;nn&quot;&gt;[package]&lt;/span&gt;
+
+&lt;span class=&quot;py&quot;&gt;name&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;points&quot;&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;version&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;0.0.1&quot;&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;authors&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Paul Woolcock &amp;lt;paul@woolcock.us&amp;gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+
+&lt;span class=&quot;nn&quot;&gt;[lib]&lt;/span&gt;
+
+&lt;span class=&quot;py&quot;&gt;name&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;points&quot;&lt;/span&gt;
+&lt;span class=&quot;py&quot;&gt;crate-type&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;[&quot;dylib&quot;]&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Also, &lt;code class=&quot;highlighter-rouge&quot;&gt;cargo&lt;/code&gt; appends a fingerprint to the lib name, so let’s
+use a Makefile that will fix it so we have an unchanging lib name:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-make&quot; data-lang=&quot;make&quot;&gt;&lt;span class=&quot;c&quot;&gt;# Makefile
+&lt;/span&gt;
+&lt;span class=&quot;nl&quot;&gt;all&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+	cargo build
+	ln -fs &lt;span class=&quot;nv&quot;&gt;$(PWD)&lt;/span&gt;/target/libpoints-&lt;span class=&quot;k&quot;&gt;*&lt;/span&gt;.so &lt;span class=&quot;nv&quot;&gt;$(PWD)&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;/target/libpoints.so&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Ok, let’s get started writing the &lt;code class=&quot;highlighter-rouge&quot;&gt;points&lt;/code&gt; library:&lt;/p&gt;
+
+&lt;p&gt;First, we bring some traits into scope from the stdlib that we will
+need. Then we define our data structures.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span class=&quot;c&quot;&gt;// src/lib.rs&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;use&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;std&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;::&lt;/span&gt;&lt;span class=&quot;nn&quot;&gt;num&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;::{&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Float&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;};&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;#[deriving(Copy)]&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;pub&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Point&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Line&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Point&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Point&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;impl&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Line&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;pub&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;fn&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;f64&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;xdiff&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;py&quot;&gt;.p1.x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;py&quot;&gt;.p2.x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ydiff&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;py&quot;&gt;.p1.y&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;py&quot;&gt;.p2.y&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;xdiff&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;.pow&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ydiff&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;.pow&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;f64&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;.sqrt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; 
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;// rustc 0.13.0-nightly (62fb41c32 2014-12-23 02:41:48 +0000)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Next, we need to define the functions that we will export for use from
+the other languages.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span class=&quot;err&quot;&gt;#&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;no_mangle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;pub&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;extern&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;C&quot;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;fn&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;make_point&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;Box&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Point&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;box&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Point&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;cp&quot;&gt;#[no_mangle]&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;pub&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;extern&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;C&quot;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;fn&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;get_distance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Point&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Point&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;f64&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;Line&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p2&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;.length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;// rustc 0.13.0-nightly (62fb41c32 2014-12-23 02:41:48 +0000)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Finally, add a quick test so we can make sure we get the same result
+everywhere.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-rust&quot; data-lang=&quot;rust&quot;&gt;&lt;span class=&quot;err&quot;&gt;#&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;cfg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;test&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)]&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;mod&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tests&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;use&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;super&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;::{&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;Point&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;get_distance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;};&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;use&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;std&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;::&lt;/span&gt;&lt;span class=&quot;nn&quot;&gt;num&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;::&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;FloatMath&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+    &lt;span class=&quot;cp&quot;&gt;#[test]&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;fn&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;test_get_distance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Point&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;};&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;p2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Point&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;};&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;assert&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;get_distance&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;.abs_sub&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;2.828427&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;mf&quot;&gt;0.01f64&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;// rustc 0.13.0-nightly (62fb41c32 2014-12-23 02:41:48 +0000)&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Now just compile, and we are done writing our Rust library.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;cargo &lt;span class=&quot;nb&quot;&gt;test
+   &lt;/span&gt;Compiling points v0.0.1 &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;file:///home/paul/projects/points&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+     Running target/points-56b2e7a44489e119
+
+running 1 &lt;span class=&quot;nb&quot;&gt;test
+test &lt;/span&gt;tests::test_get_distance ... ok
+
+&lt;span class=&quot;nb&quot;&gt;test &lt;/span&gt;result: ok. 1 passed; 0 failed; 0 ignored; 0 measured
+
+   Doc-tests points
+
+running 0 tests
+
+&lt;span class=&quot;nb&quot;&gt;test &lt;/span&gt;result: ok. 0 passed; 0 failed; 0 ignored; 0 measured
+&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;make
+cargo build
+   Compiling points v0.0.1 &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;file:///home/paul/projects/points&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+ln -fs /home/paul/projects/points/target/libpoints-&lt;span class=&quot;k&quot;&gt;*&lt;/span&gt;.so /home/paul/projects/points/target/libpoints.so&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h2 class=&quot;h2&quot; id=&quot;using-libpoints-from-perl&quot;&gt;Using &lt;code class=&quot;highlighter-rouge&quot;&gt;libpoints&lt;/code&gt; from perl&lt;/h2&gt;
+
+&lt;p&gt;We will be using &lt;code class=&quot;highlighter-rouge&quot;&gt;FFI::Raw&lt;/code&gt; instead of XS. &lt;code class=&quot;highlighter-rouge&quot;&gt;FFI::Raw&lt;/code&gt; is a perl module that
+wraps &lt;code class=&quot;highlighter-rouge&quot;&gt;libffi&lt;/code&gt;, and makes this very easy:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-perl&quot; data-lang=&quot;perl&quot;&gt;&lt;span class=&quot;c1&quot;&gt;#!/usr/bin/env perl&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;use&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;v5&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;.10&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;use&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;strict&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;use&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;warnings&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;use&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;FFI::&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;Raw&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$make_point&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;FFI::&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;Raw&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;s&quot;&gt;&quot;target/libpoints.so&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# library&lt;/span&gt;
+    &lt;span class=&quot;s&quot;&gt;&quot;make_point&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# function name&lt;/span&gt;
+    &lt;span class=&quot;nn&quot;&gt;FFI::Raw::&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;ptr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# return type&lt;/span&gt;
+    &lt;span class=&quot;nn&quot;&gt;FFI::Raw::&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;FFI::Raw::&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# argument types&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$get_distance&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;FFI::&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;Raw&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+    &lt;span class=&quot;s&quot;&gt;&quot;target/libpoints.so&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;s&quot;&gt;&quot;get_distance&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;nn&quot;&gt;FFI::Raw::&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;double&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+    &lt;span class=&quot;nn&quot;&gt;FFI::Raw::&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;ptr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;FFI::Raw::&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;ptr&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$one_point&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$make_point&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;call&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$two_point&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$make_point&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;call&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;my&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$get_distance&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;call&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$one_point&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$two_point&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+&lt;span class=&quot;nv&quot;&gt;say&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;p&gt;Now, let’s run it and see what we get:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;perl perl/points.pl
+2.82842712474619&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;h2 class=&quot;h2&quot; id=&quot;using-libpoints-from-julia&quot;&gt;Using &lt;code class=&quot;highlighter-rouge&quot;&gt;libpoints&lt;/code&gt; from Julia&lt;/h2&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://julialang.org&quot;&gt;Julia&lt;/a&gt; is even easier to use with our Rust
+library, as it has a C FFI builtin to the language:&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-julia&quot; data-lang=&quot;julia&quot;&gt;function make_point(a::Int, b::Int)
+  ccall(
+      (:make_point, &quot;./target/libpoints&quot;),  # function name &amp;amp; library location
+      Ptr{Void}, # return type
+      (Int64, Int64),  # argument types
+      a, b)  # arguments
+end
+
+function get_distance(a::Ptr{Void}, b::Ptr{Void})
+  ccall(
+      (:get_distance, &quot;./target/libpoints&quot;),
+      Float64,
+      (Ptr{Void}, Ptr{Void}),
+      a, b)
+end
+
+t = make_point(2, 2)
+u = make_point(4, 4)
+
+println(get_distance(t, u))&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-bash&quot; data-lang=&quot;bash&quot;&gt;&lt;span class=&quot;gp&quot;&gt;$ &lt;/span&gt;julia julia/points.jl
+2.8284271247461903&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+</content>
+    </entry>
+    
+    <entry>
+        <title>Elixir and the Pipe macro</title>
+        <link href="http://paul.woolcock.us/posts/elixir-pipe.html"/>
+        <updated>2014-06-27T00:00:00-04:00</updated>
+        <id>http://paul.woolcock.us/posts/elixir-pipe</id>
+        <content type="html">&lt;p&gt;In my &lt;a href=&quot;http://paul.woolcock.us/posts/simple-python-generator-example.html&quot;&gt;Simple Python Generator&lt;/a&gt; post, I showed how you could use generators to make a pipeline of functions to transform data. Today I am going to show how cool this same technique looks when used in &lt;a href=&quot;http://elixir-lang.org&quot;&gt;Elixir&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;In my python example, we assembled our pipeline like so:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;gt;&amp;gt;&amp;gt; for result in double(cube(plus_one_half(xrange(10)))):
+...     print(result)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;You see how we had to write the functions in the reverse order than they are actually executed?&lt;/p&gt;
+
+&lt;p&gt;Elixir solves this readability issue through use of the the Pipe macro. Here is the code:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;iex(1)&amp;gt; 0..9 |&amp;gt;
+...(1)      Stream.map(&amp;amp;(&amp;amp;1 + 0.5)) |&amp;gt; 
+...(1)      Stream.map(fn x -&amp;gt; x * x * x end) |&amp;gt;
+...(1)      Stream.map(&amp;amp;(&amp;amp;1 * 2)) |&amp;gt;
+...(1)      Enum.into([])
+[0.25, 6.75, 31.25, 85.75, 182.25, 332.75, 549.25, 843.75, 1228.25, 1714.75]    
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Isn’t that so much better? Even more, the Stream module implements lazy iterators, so we get the same benefits that the python generators give us, in terms of memory usage.&lt;/p&gt;
+</content>
+    </entry>
+    
+    <entry>
+        <title>Stoicism & CBT</title>
+        <link href="http://paul.woolcock.us/posts/stoicism-cbt.html"/>
+        <updated>2014-01-01T00:00:00-05:00</updated>
+        <id>http://paul.woolcock.us/posts/stoicism-cbt</id>
+        <content type="html">&lt;p&gt;&lt;a href=&quot;http://www.amazon.com/Philosophy-Cognitive-Behavioural-Therapy-CBT-Psychotherapy-ebook/dp/B005TQU5KA/ref=sr_1_1?ie=UTF8&amp;amp;qid=1388628876&amp;amp;sr=8-1&amp;amp;keywords=Stoicism+CBT&quot;&gt;The Philosophy of Cognitive-Behavioural Therapy&lt;/a&gt; (non-affiliate link)&lt;/p&gt;
+</content>
+    </entry>
+    
+    <entry>
+        <title>Simple Python Generator Example</title>
+        <link href="http://paul.woolcock.us/posts/python-generators.html"/>
+        <updated>2013-03-18T00:00:00-04:00</updated>
+        <id>http://paul.woolcock.us/posts/python-generators</id>
+        <content type="html">&lt;p&gt;So I have read this amazing lesson before: &lt;a href=&quot;http://www.dabeaz.com/generators/&quot;&gt;Generator Tricks for
+System Programmers&lt;/a&gt;, and I thought I would write up a quick example to show the
+effect of the “pipeline” that strings of generators set up. No long
+tutorial here, just a simple example.&lt;/p&gt;
+
+&lt;p&gt;Here we have three functions, each one performing some numeric operation
+on each entry in a list of numbers:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;gt;&amp;gt;&amp;gt; def plus_one_half(nums):
+...     for num in nums:
+...         print(&quot;adding 1/2 to {num}&quot;.format(num=num))
+...         yield (num + 0.5)
+
+&amp;gt;&amp;gt;&amp;gt; def double(nums):
+...     for num in nums:
+...         print(&quot;doubling {num}&quot;.format(num=num))
+...         yield (num * 2)
+
+&amp;gt;&amp;gt;&amp;gt; def cube(nums):
+...     for num in nums:
+...         print(&quot;cubing {num}&quot;.format(num=num))
+...         yield (num ** 3)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Notice that all of them are actually generators (not functions), as they
+use the yield keyword instead of return.&lt;/p&gt;
+
+&lt;p&gt;When we set up a generator pipeline, we can see how each value is only
+retrieved when it is needed:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;gt;&amp;gt;&amp;gt; for result in double(cube(plus_one_half(xrange(10)))):
+...     print(&quot;result is {result}&quot;.format(result=result))
+...     print(&quot;---&quot;)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;This prints out:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;adding 1/2 to 0
+cubing 0.5
+doubling 0.125
+result is: 0.25
+---
+adding 1/2 to 1
+cubing 1.5
+doubling 3.375
+result is: 6.75
+---
+adding 1/2 to 2
+cubing 2.5
+doubling 15.625
+result is: 31.25
+---
+adding 1/2 to 3
+cubing 3.5
+doubling 42.875
+result is: 85.75
+---
+adding 1/2 to 4
+cubing 4.5
+doubling 91.125
+result is: 182.25
+---
+adding 1/2 to 5
+cubing 5.5
+doubling 166.375
+result is: 332.75
+---
+adding 1/2 to 6
+cubing 6.5
+doubling 274.625
+result is: 549.25
+---
+adding 1/2 to 7
+cubing 7.5
+doubling 421.875
+result is: 843.75
+---
+adding 1/2 to 8
+cubing 8.5
+doubling 614.125
+result is: 1228.25
+---
+adding 1/2 to 9
+cubing 9.5
+doubling 857.375
+result is: 1714.75
+---
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Here we can clearly see how each generator runs until it yields, then
+passes control to the next generator in the pipeline. Neat!&lt;/p&gt;
+
+&lt;p&gt;If you did this without generators, you would have to change the
+functions to build and return lists.&lt;/p&gt;
+
+&lt;p&gt;(Actually, you would probably use list comprehensions, but we are going
+to do it this way so we can still easily include the call to print)&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;gt;&amp;gt;&amp;gt; def plus_one_half(nums):
+...     result = []
+...     for num in nums:
+...         print(&quot;adding 1/2 to {num}&quot;.format(num=num))
+...         result.append(num + 0.5)
+...     return result
+
+&amp;gt;&amp;gt;&amp;gt; def double(nums):
+...     result = []
+...     for num in nums:
+...         print(&quot;doubling {num}&quot;.format(num=num))
+...         result.append(num * 2)
+...     return result
+
+&amp;gt;&amp;gt;&amp;gt; def cube(nums):
+...     result = []
+...     for num in nums:
+...         print(&quot;cubing {num}&quot;.format(num=num))
+...         result.append(num ** 3)
+...     return result
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;The code is similar, except now we need a list to store the results of
+the computations in each function. It also means that instead of
+generating a value and then passing control to the next function, each
+function performs it’s transformation on the entire list of numbers
+before returning, as we can see here:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&amp;gt;&amp;gt;&amp;gt; for result in double(cube(plus_one_half(xrange(10)))):
+...     print(&quot;result is {result}&quot;.format(result=result))
+...     print(&quot;---&quot;)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;and the results:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;adding 1/2 to 0
+adding 1/2 to 1
+adding 1/2 to 2
+adding 1/2 to 3
+adding 1/2 to 4
+adding 1/2 to 5
+adding 1/2 to 6
+adding 1/2 to 7
+adding 1/2 to 8
+adding 1/2 to 9
+cubing 0.5
+cubing 1.5
+cubing 2.5
+cubing 3.5
+cubing 4.5
+cubing 5.5
+cubing 6.5
+cubing 7.5
+cubing 8.5
+cubing 9.5
+doubling 0.125
+doubling 3.375
+doubling 15.625
+doubling 42.875
+doubling 91.125
+doubling 166.375
+doubling 274.625
+doubling 421.875
+doubling 614.125
+doubling 857.375
+result is: 0.25
+---
+result is: 6.75
+---
+result is: 31.25
+---
+result is: 85.75
+---
+result is: 182.25
+---
+result is: 332.75
+---
+result is: 549.25
+---
+result is: 843.75
+---
+result is: 1228.25
+---
+result is: 1714.75
+---
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;As a result of these differences, the generator pipeline needs to keep
+much less information in memory at any given time than the list example.&lt;/p&gt;
+
+</content>
+    </entry>
+    
+    <entry>
+        <title>Thinking Functionally</title>
+        <link href="http://paul.woolcock.us/posts/thinking-functionally.html"/>
+        <updated>2012-03-16T00:00:00-04:00</updated>
+        <id>http://paul.woolcock.us/posts/thinking-functionally</id>
+        <content type="html">&lt;h2 id=&quot;easy-problem-made-hard&quot;&gt;Easy problem made hard&lt;/h2&gt;
+
+&lt;p&gt;I have been messing around with &lt;a href=&quot;http://clojure.org&quot;&gt;Clojure&lt;/a&gt; quite a bit
+lately, and have been enjoying the challenges that come from learning a
+programming language that uses a different paradigm than what I am used to.&lt;/p&gt;
+
+&lt;p&gt;Today, I was messing around with Clojure’s java interop and writing some Swing
+stuff.  I won’t mention the project yet, because I am still kicking it around,
+but I am pretty excited about it.&lt;/p&gt;
+
+&lt;p&gt;Anyway, I came across a simple problem, and because I am not thinking “functionally”
+enough yet, I made it much harder than it needed to be.&lt;/p&gt;
+
+&lt;p&gt;The problem boiled down to this: lets say you need an array of objects that are
+mostly the same, except for the fact that each object includes an incremented
+integer.  So, for fun, let’s say we want to end up with this:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&#39;(&quot;This is number: 0&quot; &quot;This is number: 1&quot; &quot;This is number: 2&quot;
+  &quot;This is number: 3&quot; &quot;This is number: 4&quot;)
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Easy, right?  Of course, my imperative brain immediately starting
+thinking of what kind of looping construct I would need to use to get this
+result.  My first thought was that there had to be a function in &lt;code class=&quot;highlighter-rouge&quot;&gt;clojure.core&lt;/code&gt;
+that could do this.  Of course, I started looking in the wrong direction.
+My first thought was something like this:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;; Clojure experts: Please don&#39;t cringe too hard, you&#39;ll pull something
+
+(defn make-string [num]
+  (format &quot;This is number: %d&quot; num))
+
+(def string-list
+  (into &#39;()
+    (loop [i 0]
+      (if (&amp;lt; i 5)
+          (make-string i)
+        (recur (+ i 1))))))
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Of course, this is pretty obviously a case of trying to apply imperative thinking
+to a functional language.  I’m telling the computer &lt;em&gt;how&lt;/em&gt; to do
+something instead of telling it &lt;em&gt;what&lt;/em&gt; to do.&lt;/p&gt;
+
+&lt;p&gt;I also did some messing around with the &lt;code class=&quot;highlighter-rouge&quot;&gt;repeatedly&lt;/code&gt; function, as well as the
+&lt;code class=&quot;highlighter-rouge&quot;&gt;take-while&lt;/code&gt; function, but I am not going to include those examples here, as I
+feel stupid enough already.&lt;/p&gt;
+
+&lt;p&gt;Finally, I realized how much harder I was making this than I really needed to:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;(map make-string (range 5))
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;Or, if I wanted to package this up into a little generator function:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;(defn make-strings []
+  (map make-string (range)))
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;So that I could later do something like this:&lt;/p&gt;
+
+&lt;div class=&quot;highlighter-rouge&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;(take 28 (make-strings))
+&lt;/code&gt;&lt;/pre&gt;
+&lt;/div&gt;
+
+&lt;p&gt;It has taken a little getting used to, but I think I am starting to get
+the hang of it.  I have also started reading
+&lt;a href=&quot;http://www.paulgraham.com/onlisp.html&quot;&gt;On Lisp&lt;/a&gt; by Paul Graham,
+and even though he is writing in Common Lisp in it, his points about bottom
+up design have really helped me in thinking about how to structure my
+Clojure programs.&lt;/p&gt;
+
+</content>
+    </entry>
+    
+</feed>
+

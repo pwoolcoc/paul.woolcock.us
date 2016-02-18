@@ -1,0 +1,9 @@
+Goodbye 2014, Hello 2015
+
+CHANGES
+=======
+
+Version 1 / 2014-12-31
+``````````````````````
+
+- Initial commit

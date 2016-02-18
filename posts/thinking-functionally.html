@@ -1,0 +1,154 @@
+<!doctype html>
+<!--[if lt IE 7]> <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js lt-ie9 lt-ie8" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js lt-ie9" lang="en"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Thinking Functionally</title>
+  <meta name="description" content="In which I realize that working in a functional language is much different from working in imperative languages.">
+  <meta name="author" content="Paul Woolcock">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta property="og:title" content="Thinking Functionally">
+  <meta property="og:description" content="In which I realize that working in a functional language is much different from working in imperative languages.">
+  <meta property="og:image" content="">
+  <link rel="stylesheet" href="/css/normalize.css?v=">
+  <link rel="stylesheet" href="/css/skeleton.css?v=">
+  <link rel="stylesheet" href="/css/style.css?v=">
+  <link rel="stylesheet" href="/css/syntax.css?v=">
+  <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="/js/libs/modernizr-2.0.6.min.js"></script>
+</head>
+<body>
+  <div class="left-side">
+    <nav class="hide-on-mobile">
+      <ul>
+        <ul>
+  <li><a href="/">Posts</a></li>
+  <li><a href="/rss.xml">RSS</a></li>
+  <li><a href="/blogroll.html">Blogroll</a></li>
+  <li><a class="fa fa-twitter mentions-twitter" href="https://twitter.com/pauldwoolcock">@pauldwoolcock</a></li>
+  <li><a class="fa fa-github mentions-github" href="https://github.com/pwoolcoc">@pwoolcoc</a></li>
+  <li><a href="http://stackoverflow.com/users/35288/paul-woolcock">StackOverflow</a></li>
+  <li><a href="/resume.html">Résumé</a></li>
+</ul>
+
+      </ul>
+    </nav>
+  </div>
+  <div xmlns:dc="http://purl.org/dc/elements/1.1/" class="right-side">
+    <h1 property="dc:title" class="h1">Thinking Functionally</h1>
+    <h2 id="easy-problem-made-hard">Easy problem made hard</h2>
+
+<p>I have been messing around with <a href="http://clojure.org">Clojure</a> quite a bit
+lately, and have been enjoying the challenges that come from learning a
+programming language that uses a different paradigm than what I am used to.</p>
+
+<p>Today, I was messing around with Clojure’s java interop and writing some Swing
+stuff.  I won’t mention the project yet, because I am still kicking it around,
+but I am pretty excited about it.</p>
+
+<p>Anyway, I came across a simple problem, and because I am not thinking “functionally”
+enough yet, I made it much harder than it needed to be.</p>
+
+<p>The problem boiled down to this: lets say you need an array of objects that are
+mostly the same, except for the fact that each object includes an incremented
+integer.  So, for fun, let’s say we want to end up with this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>'("This is number: 0" "This is number: 1" "This is number: 2"
+  "This is number: 3" "This is number: 4")
+</code></pre>
+</div>
+
+<p>Easy, right?  Of course, my imperative brain immediately starting
+thinking of what kind of looping construct I would need to use to get this
+result.  My first thought was that there had to be a function in <code class="highlighter-rouge">clojure.core</code>
+that could do this.  Of course, I started looking in the wrong direction.
+My first thought was something like this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>; Clojure experts: Please don't cringe too hard, you'll pull something
+
+(defn make-string [num]
+  (format "This is number: %d" num))
+
+(def string-list
+  (into '()
+    (loop [i 0]
+      (if (&lt; i 5)
+          (make-string i)
+        (recur (+ i 1))))))
+</code></pre>
+</div>
+
+<p>Of course, this is pretty obviously a case of trying to apply imperative thinking
+to a functional language.  I’m telling the computer <em>how</em> to do
+something instead of telling it <em>what</em> to do.</p>
+
+<p>I also did some messing around with the <code class="highlighter-rouge">repeatedly</code> function, as well as the
+<code class="highlighter-rouge">take-while</code> function, but I am not going to include those examples here, as I
+feel stupid enough already.</p>
+
+<p>Finally, I realized how much harder I was making this than I really needed to:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>(map make-string (range 5))
+</code></pre>
+</div>
+
+<p>Or, if I wanted to package this up into a little generator function:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>(defn make-strings []
+  (map make-string (range)))
+</code></pre>
+</div>
+
+<p>So that I could later do something like this:</p>
+
+<div class="highlighter-rouge"><pre class="highlight"><code>(take 28 (make-strings))
+</code></pre>
+</div>
+
+<p>It has taken a little getting used to, but I think I am starting to get
+the hang of it.  I have also started reading
+<a href="http://www.paulgraham.com/onlisp.html">On Lisp</a> by Paul Graham,
+and even though he is writing in Common Lisp in it, his points about bottom
+up design have really helped me in thinking about how to structure my
+Clojure programs.</p>
+
+<br/>
+	<div class="italic">
+	- <span class="signature" property="dc:creator">Paul Woolcock</span>, <span property="dc:date">16 Mar 2012</span>
+	</div>
+    <a href="/changelogs/thinking-functionally.txt">Changelog</a>
+	<div class="license">
+		<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">
+			<img alt="Creative Commons License" style="border-width:0" src="http://i.creativecommons.org/l/by-sa/3.0/88x31.png" /></a>
+	</div>
+  </div>
+  <footer>
+    <nav id="mobile-menu" class="hide-on-desktop">
+      <ul>
+        <ul>
+  <li><a href="/">Posts</a></li>
+  <li><a href="/rss.xml">RSS</a></li>
+  <li><a href="/blogroll.html">Blogroll</a></li>
+  <li><a class="fa fa-twitter mentions-twitter" href="https://twitter.com/pauldwoolcock">@pauldwoolcock</a></li>
+  <li><a class="fa fa-github mentions-github" href="https://github.com/pwoolcoc">@pwoolcoc</a></li>
+  <li><a href="http://stackoverflow.com/users/35288/paul-woolcock">StackOverflow</a></li>
+  <li><a href="/resume.html">Résumé</a></li>
+</ul>
+
+      </ul>
+    </nav>
+  </footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.0/jquery.min.js"></script>
+  <script>window.jQuery || document.write('<script src="/js/libs/jquery-1.7.0.min.js"><\/script>')</script>
+  <!--<script defer src="/js/plugins.js"></script>
+  <script defer src="/js/script.js"></script>-->
+  <!--[if lt IE 7]>
+    <script defer src="//ajax.googleapis.com/ajax/libs/chrome-frame/1.0.3/CFInstall.min.js"></script>
+    <script defer>window.attachEvent('onload',function(){CFInstall.check({mode:'overlay'})})</script>
+  <![endif]-->
+</body>
+</html>
+

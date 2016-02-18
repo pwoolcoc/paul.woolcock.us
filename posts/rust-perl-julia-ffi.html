@@ -1,0 +1,259 @@
+<!doctype html>
+<!--[if lt IE 7]> <html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if IE 7]>    <html class="no-js lt-ie9 lt-ie8" lang="en"> <![endif]-->
+<!--[if IE 8]>    <html class="no-js lt-ie9" lang="en"> <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Using Rust from Perl and Julia</title>
+  <meta name="description" content="In which we create a shared library with Rust, and use it from Perl and Julia">
+  <meta name="author" content="Paul Woolcock">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta property="og:title" content="Using Rust from Perl and Julia">
+  <meta property="og:description" content="In which we create a shared library with Rust, and use it from Perl and Julia">
+  <meta property="og:image" content="">
+  <link rel="stylesheet" href="/css/normalize.css?v=">
+  <link rel="stylesheet" href="/css/skeleton.css?v=">
+  <link rel="stylesheet" href="/css/style.css?v=">
+  <link rel="stylesheet" href="/css/syntax.css?v=">
+  <link href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
+  <script src="/js/libs/modernizr-2.0.6.min.js"></script>
+</head>
+<body>
+  <div class="left-side">
+    <nav class="hide-on-mobile">
+      <ul>
+        <ul>
+  <li><a href="/">Posts</a></li>
+  <li><a href="/rss.xml">RSS</a></li>
+  <li><a href="/blogroll.html">Blogroll</a></li>
+  <li><a class="fa fa-twitter mentions-twitter" href="https://twitter.com/pauldwoolcock">@pauldwoolcock</a></li>
+  <li><a class="fa fa-github mentions-github" href="https://github.com/pwoolcoc">@pwoolcoc</a></li>
+  <li><a href="http://stackoverflow.com/users/35288/paul-woolcock">StackOverflow</a></li>
+  <li><a href="/resume.html">Résumé</a></li>
+</ul>
+
+      </ul>
+    </nav>
+  </div>
+  <div xmlns:dc="http://purl.org/dc/elements/1.1/" class="right-side">
+    <h1 property="dc:title" class="h1">Using Rust from Perl and Julia</h1>
+    <p>With the recent <a href="https://github.com/rust-lang/rust/commit/0efafac398ff7f28c5f0fe756c15b9008b3e0534">runtime removal</a>,
+utilizing <a href="http://rust-lang.org/">Rust</a> libraries from other languages has gotten even better. In
+this post I am going to take the Rust library that <a class="fa fa-twitter mentions-twitter" href="https://twitter.com/wycats">@wycats</a> used in
+<a href="http://blog.skylight.io/bending-the-curve-writing-safe-fast-native-gems-with-rust/">this post</a>,
+and use it from both Perl 5, and <a href="http://julialang.org">Julia</a>.</p>
+
+<h2 class="h2" id="getting-started">Getting started</h2>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="gp">$ </span>cargo new points
+<span class="gp">$ </span><span class="nb">cd </span>points
+<span class="gp">$ </span>mkdir perl julia
+<span class="gp">$ </span>touch Makefile perl/points.pl julia/points.jl</code></pre></figure>
+
+<p>Fix cargo to create a .so instead of a .rlib:</p>
+
+<figure class="highlight"><pre><code class="language-toml" data-lang="toml"><span class="c"># Cargo.toml</span>
+<span class="nn">[package]</span>
+
+<span class="py">name</span> <span class="p">=</span> <span class="s">"points"</span>
+<span class="py">version</span> <span class="p">=</span> <span class="s">"0.0.1"</span>
+<span class="py">authors</span> <span class="p">=</span> <span class="p">[</span><span class="s">"Paul Woolcock &lt;paul@woolcock.us&gt;"</span><span class="p">]</span>
+
+<span class="nn">[lib]</span>
+
+<span class="py">name</span> <span class="p">=</span> <span class="s">"points"</span>
+<span class="py">crate-type</span> <span class="p">=</span> <span class="nn">["dylib"]</span></code></pre></figure>
+
+<p>Also, <code class="highlighter-rouge">cargo</code> appends a fingerprint to the lib name, so let’s
+use a Makefile that will fix it so we have an unchanging lib name:</p>
+
+<figure class="highlight"><pre><code class="language-make" data-lang="make"><span class="c"># Makefile
+</span>
+<span class="nl">all</span><span class="o">:</span>
+	cargo build
+	ln -fs <span class="nv">$(PWD)</span>/target/libpoints-<span class="k">*</span>.so <span class="nv">$(PWD)</span><span class="err">/target/libpoints.so</span></code></pre></figure>
+
+<p>Ok, let’s get started writing the <code class="highlighter-rouge">points</code> library:</p>
+
+<p>First, we bring some traits into scope from the stdlib that we will
+need. Then we define our data structures.</p>
+
+<figure class="highlight"><pre><code class="language-rust" data-lang="rust"><span class="c">// src/lib.rs</span>
+
+<span class="k">use</span> <span class="nn">std</span><span class="p">::</span><span class="nn">num</span><span class="p">::{</span><span class="n">Int</span><span class="p">,</span> <span class="n">Float</span><span class="p">};</span>
+
+<span class="cp">#[deriving(Copy)]</span>
+<span class="k">pub</span> <span class="k">struct</span> <span class="n">Point</span> <span class="p">{</span> <span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">int</span> <span class="p">}</span>
+
+<span class="k">struct</span> <span class="n">Line</span> <span class="p">{</span> <span class="n">p1</span><span class="p">:</span> <span class="n">Point</span><span class="p">,</span> <span class="n">p2</span><span class="p">:</span> <span class="n">Point</span> <span class="p">}</span>
+
+<span class="k">impl</span> <span class="n">Line</span> <span class="p">{</span>
+    <span class="k">pub</span> <span class="k">fn</span> <span class="nf">length</span><span class="p">(</span><span class="o">&amp;</span><span class="k">self</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="nb">f64</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="n">xdiff</span> <span class="o">=</span> <span class="k">self</span><span class="py">.p1.x</span> <span class="o">-</span> <span class="k">self</span><span class="py">.p2.x</span><span class="p">;</span>
+        <span class="k">let</span> <span class="n">ydiff</span> <span class="o">=</span> <span class="k">self</span><span class="py">.p1.y</span> <span class="o">-</span> <span class="k">self</span><span class="py">.p2.y</span><span class="p">;</span>
+        <span class="p">((</span><span class="n">xdiff</span><span class="nf">.pow</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">ydiff</span><span class="nf">.pow</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span> <span class="k">as</span> <span class="nb">f64</span><span class="p">)</span><span class="nf">.sqrt</span><span class="p">()</span> 
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c">// rustc 0.13.0-nightly (62fb41c32 2014-12-23 02:41:48 +0000)</span></code></pre></figure>
+
+<p>Next, we need to define the functions that we will export for use from
+the other languages.</p>
+
+<figure class="highlight"><pre><code class="language-rust" data-lang="rust"><span class="err">#</span><span class="p">[</span><span class="n">no_mangle</span><span class="p">]</span>
+<span class="k">pub</span> <span class="k">extern</span> <span class="s">"C"</span> <span class="k">fn</span> <span class="nf">make_point</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="nb">Box</span><span class="o">&lt;</span><span class="n">Point</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="k">box</span> <span class="n">Point</span> <span class="p">{</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">y</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="cp">#[no_mangle]</span>
+<span class="k">pub</span> <span class="k">extern</span> <span class="s">"C"</span> <span class="k">fn</span> <span class="nf">get_distance</span><span class="p">(</span><span class="n">p1</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">Point</span><span class="p">,</span> <span class="n">p2</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">Point</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="nb">f64</span> <span class="p">{</span>
+    <span class="n">Line</span> <span class="p">{</span> <span class="n">p1</span><span class="p">:</span> <span class="o">*</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">:</span> <span class="o">*</span><span class="n">p2</span> <span class="p">}</span><span class="nf">.length</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="c">// rustc 0.13.0-nightly (62fb41c32 2014-12-23 02:41:48 +0000)</span></code></pre></figure>
+
+<p>Finally, add a quick test so we can make sure we get the same result
+everywhere.</p>
+
+<figure class="highlight"><pre><code class="language-rust" data-lang="rust"><span class="err">#</span><span class="p">[</span><span class="nf">cfg</span><span class="p">(</span><span class="n">test</span><span class="p">)]</span>
+<span class="k">mod</span> <span class="n">tests</span> <span class="p">{</span>
+    <span class="k">use</span> <span class="nn">super</span><span class="p">::{</span><span class="n">Point</span><span class="p">,</span> <span class="n">get_distance</span><span class="p">};</span>
+    <span class="k">use</span> <span class="nn">std</span><span class="p">::</span><span class="nn">num</span><span class="p">::</span><span class="n">FloatMath</span><span class="p">;</span>
+
+    <span class="cp">#[test]</span>
+    <span class="k">fn</span> <span class="nf">test_get_distance</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="n">p1</span> <span class="o">=</span> <span class="n">Point</span> <span class="p">{</span> <span class="n">x</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="mi">2</span> <span class="p">};</span>
+        <span class="k">let</span> <span class="n">p2</span> <span class="o">=</span> <span class="n">Point</span> <span class="p">{</span> <span class="n">x</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="mi">4</span> <span class="p">};</span>
+        <span class="k">assert</span><span class="o">!</span><span class="p">((</span><span class="nf">get_distance</span><span class="p">(</span><span class="o">&amp;</span><span class="n">p1</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">p2</span><span class="p">)</span><span class="nf">.abs_sub</span><span class="p">(</span><span class="mf">2.828427</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.01f64</span><span class="p">));</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c">// rustc 0.13.0-nightly (62fb41c32 2014-12-23 02:41:48 +0000)</span></code></pre></figure>
+
+<p>Now just compile, and we are done writing our Rust library.</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="gp">$ </span>cargo <span class="nb">test
+   </span>Compiling points v0.0.1 <span class="o">(</span>file:///home/paul/projects/points<span class="o">)</span>
+     Running target/points-56b2e7a44489e119
+
+running 1 <span class="nb">test
+test </span>tests::test_get_distance ... ok
+
+<span class="nb">test </span>result: ok. 1 passed; 0 failed; 0 ignored; 0 measured
+
+   Doc-tests points
+
+running 0 tests
+
+<span class="nb">test </span>result: ok. 0 passed; 0 failed; 0 ignored; 0 measured
+<span class="gp">$ </span>make
+cargo build
+   Compiling points v0.0.1 <span class="o">(</span>file:///home/paul/projects/points<span class="o">)</span>
+ln -fs /home/paul/projects/points/target/libpoints-<span class="k">*</span>.so /home/paul/projects/points/target/libpoints.so</code></pre></figure>
+
+<h2 class="h2" id="using-libpoints-from-perl">Using <code class="highlighter-rouge">libpoints</code> from perl</h2>
+
+<p>We will be using <code class="highlighter-rouge">FFI::Raw</code> instead of XS. <code class="highlighter-rouge">FFI::Raw</code> is a perl module that
+wraps <code class="highlighter-rouge">libffi</code>, and makes this very easy:</p>
+
+<figure class="highlight"><pre><code class="language-perl" data-lang="perl"><span class="c1">#!/usr/bin/env perl</span>
+<span class="k">use</span> <span class="nv">v5</span><span class="mf">.10</span><span class="p">;</span>
+<span class="k">use</span> <span class="nv">strict</span><span class="p">;</span>
+<span class="k">use</span> <span class="nv">warnings</span><span class="p">;</span>
+
+<span class="k">use</span> <span class="nn">FFI::</span><span class="nv">Raw</span><span class="p">;</span>
+
+<span class="k">my</span> <span class="nv">$make_point</span> <span class="o">=</span> <span class="nn">FFI::</span><span class="nv">Raw</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span>
+    <span class="s">"target/libpoints.so"</span><span class="p">,</span> <span class="c1"># library</span>
+    <span class="s">"make_point"</span><span class="p">,</span> <span class="c1"># function name</span>
+    <span class="nn">FFI::Raw::</span><span class="nv">ptr</span><span class="p">,</span> <span class="c1"># return type</span>
+    <span class="nn">FFI::Raw::</span><span class="nv">int</span><span class="p">,</span> <span class="nn">FFI::Raw::</span><span class="nv">int</span> <span class="c1"># argument types</span>
+<span class="p">);</span>
+
+<span class="k">my</span> <span class="nv">$get_distance</span> <span class="o">=</span> <span class="nn">FFI::</span><span class="nv">Raw</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span>
+    <span class="s">"target/libpoints.so"</span><span class="p">,</span>
+    <span class="s">"get_distance"</span><span class="p">,</span>
+    <span class="nn">FFI::Raw::</span><span class="nv">double</span><span class="p">,</span>
+    <span class="nn">FFI::Raw::</span><span class="nv">ptr</span><span class="p">,</span> <span class="nn">FFI::Raw::</span><span class="nv">ptr</span>
+<span class="p">);</span>
+
+<span class="k">my</span> <span class="nv">$one_point</span> <span class="o">=</span> <span class="nv">$make_point</span><span class="o">-&gt;</span><span class="nv">call</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">);</span>
+<span class="k">my</span> <span class="nv">$two_point</span> <span class="o">=</span> <span class="nv">$make_point</span><span class="o">-&gt;</span><span class="nv">call</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">);</span>
+
+<span class="k">my</span> <span class="nv">$result</span> <span class="o">=</span> <span class="nv">$get_distance</span><span class="o">-&gt;</span><span class="nv">call</span><span class="p">(</span><span class="nv">$one_point</span><span class="p">,</span> <span class="nv">$two_point</span><span class="p">);</span>
+
+<span class="nv">say</span> <span class="nv">$result</span><span class="p">;</span></code></pre></figure>
+
+<p>Now, let’s run it and see what we get:</p>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="gp">$ </span>perl perl/points.pl
+2.82842712474619</code></pre></figure>
+
+<h2 class="h2" id="using-libpoints-from-julia">Using <code class="highlighter-rouge">libpoints</code> from Julia</h2>
+
+<p><a href="http://julialang.org">Julia</a> is even easier to use with our Rust
+library, as it has a C FFI builtin to the language:</p>
+
+<figure class="highlight"><pre><code class="language-julia" data-lang="julia">function make_point(a::Int, b::Int)
+  ccall(
+      (:make_point, "./target/libpoints"),  # function name &amp; library location
+      Ptr{Void}, # return type
+      (Int64, Int64),  # argument types
+      a, b)  # arguments
+end
+
+function get_distance(a::Ptr{Void}, b::Ptr{Void})
+  ccall(
+      (:get_distance, "./target/libpoints"),
+      Float64,
+      (Ptr{Void}, Ptr{Void}),
+      a, b)
+end
+
+t = make_point(2, 2)
+u = make_point(4, 4)
+
+println(get_distance(t, u))</code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="gp">$ </span>julia julia/points.jl
+2.8284271247461903</code></pre></figure>
+
+<br/>
+	<div class="italic">
+	- <span class="signature" property="dc:creator">Paul Woolcock</span>, <span property="dc:date">23 Dec 2014</span>
+	</div>
+    <a href="/changelogs/rust-perl-julia-ffi.txt">Changelog</a>
+	<div class="license">
+		<a rel="license" href="http://creativecommons.org/licenses/by-sa/3.0/">
+			<img alt="Creative Commons License" style="border-width:0" src="http://i.creativecommons.org/l/by-sa/3.0/88x31.png" /></a>
+	</div>
+  </div>
+  <footer>
+    <nav id="mobile-menu" class="hide-on-desktop">
+      <ul>
+        <ul>
+  <li><a href="/">Posts</a></li>
+  <li><a href="/rss.xml">RSS</a></li>
+  <li><a href="/blogroll.html">Blogroll</a></li>
+  <li><a class="fa fa-twitter mentions-twitter" href="https://twitter.com/pauldwoolcock">@pauldwoolcock</a></li>
+  <li><a class="fa fa-github mentions-github" href="https://github.com/pwoolcoc">@pwoolcoc</a></li>
+  <li><a href="http://stackoverflow.com/users/35288/paul-woolcock">StackOverflow</a></li>
+  <li><a href="/resume.html">Résumé</a></li>
+</ul>
+
+      </ul>
+    </nav>
+  </footer>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.7.0/jquery.min.js"></script>
+  <script>window.jQuery || document.write('<script src="/js/libs/jquery-1.7.0.min.js"><\/script>')</script>
+  <!--<script defer src="/js/plugins.js"></script>
+  <script defer src="/js/script.js"></script>-->
+  <!--[if lt IE 7]>
+    <script defer src="//ajax.googleapis.com/ajax/libs/chrome-frame/1.0.3/CFInstall.min.js"></script>
+    <script defer>window.attachEvent('onload',function(){CFInstall.check({mode:'overlay'})})</script>
+  <![endif]-->
+</body>
+</html>
+

@@ -1,0 +1,10 @@
+Thinking Functionally
+
+CHANGES
+-------
+
+Version 1 / 2012-03-16
+``````````````````````
+
+- Initial posting
+

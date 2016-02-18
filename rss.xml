@@ -1,0 +1,776 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"
+  xmlns:content="http://purl.org/rss/1.0/modules/content/"
+  xmlns:dc="http://purl.org/dc/elements/1.1/"
+  xmlns:itunes="http://www.itunes.com/dtds/podcast-1.0.dtd"
+  xmlns:trackback="http://madskills.com/public/xml/rss/module/trackback/">
+  <channel>
+    <title>Paul Woolcock</title>
+    <link>http://paul.woolcock.us</link>
+    <description>RSS feed for Paul Woolcock</description>
+    <pubDate>Thu, 24 Sep 2015 00:00:00 -0400</pubDate>
+    <item>
+      <title>Survey of licenses used by Rust projects on crates.io</title>
+      <link>http://paul.woolcock.us/posts/crates-io-license-survey.html</link>
+      <description><![CDATA[So I am working on a feature that I hope to get merged into cargo,
+Rusts package manager. The feature would allow a developer to specify a
+license to add to a new project (or all new projects), and automatically
+put that information in their Cargo.toml, as well as add the LICENSE
+file to their project.
+
+]]></description>
+      <pubDate>Thu, 24 Sep 2015 00:00:00 -0400</pubDate>
+      <guid>http://paul.woolcock.us/posts/crates-io-license-survey.html</guid>
+      <content:encoded><![CDATA[So I am working on a feature that I hope to get merged into `cargo`,
+Rusts package manager. The feature would allow a developer to specify a
+license to add to a new project (or all new projects), and automatically
+put that information in their `Cargo.toml`, as well as add the `LICENSE`
+file to their project.
+
+So I got to the point where the feature was working, but I had to figure out
+how many, and which licenses, to support in the tool. My intuition was to
+include: MIT, BSD (2- and 3-clause), Apache-2.0, and GPL, both -2.0 and -3.0.
+
+However, we are all about data these days, right? So forget my intuition, let's
+see what actual Rustaceans are using!
+
+## Process
+
+So my first step was to collect some data from `crates.io`, the central repository
+for Rust crates. You can easily get an index of all the crates on the site by
+using the index that the Cargo team has on github:
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="gp">$ </span>git clone https://github.com/crates.io-index
+<span class="gp">$ </span><span class="nb">cd </span>crates.io-index</code></pre></figure>
+
+Now, lets query the `crates.io` API for information about these crates.
+I ended up saving the information to a file, though you don't necessarily have to
+do that. It helped with iterating on the data, as I didn't have to repeatedly hit
+crates.io's servers for the info (it saved them bandwidth, and me time, since
+crates.io _will_ cut you off if you make too many requests in too short a time).
+
+Here is the script I used to gather the data:
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">csv</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">time</span>
+
+<span class="kn">import</span> <span class="nn">requests</span>
+
+<span class="n">CRATE_URL</span> <span class="o">=</span> <span class="s">"https://crates.io/api/v1/crates/{crate_name}"</span>
+<span class="n">INDEX_PATH</span> <span class="o">=</span> <span class="s">"/path/to/crates.io-index"</span>
+
+<span class="k">def</span> <span class="nf">walk_index</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">fnames</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">walk</span><span class="p">(</span><span class="n">path</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">fname</span> <span class="ow">in</span> <span class="n">fnames</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">fname</span> <span class="o">==</span> <span class="s">"config.json"</span><span class="p">:</span>
+                <span class="k">yield</span> <span class="n">fname</span>
+
+<span class="k">def</span> <span class="nf">get_license</span><span class="p">(</span><span class="n">crate_name</span><span class="p">):</span>
+    <span class="n">req</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">CRATE_URL</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">crate_name</span><span class="o">=</span><span class="n">crate_name</span><span class="p">))</span>
+    <span class="k">if</span> <span class="n">req</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="n">requests</span><span class="o">.</span><span class="n">codes</span><span class="o">.</span><span class="n">ok</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">j</span> <span class="o">=</span> <span class="n">req</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+            <span class="n">crate</span> <span class="o">=</span> <span class="n">j</span><span class="p">[</span><span class="s">'crate'</span><span class="p">]</span>
+            <span class="n">license</span> <span class="o">=</span> <span class="n">crate</span><span class="p">[</span><span class="s">'license'</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">license</span> <span class="ow">is</span> <span class="ow">not</span> <span class="bp">None</span><span class="p">:</span>
+                <span class="n">license</span> <span class="o">=</span> <span class="n">license</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+            <span class="k">return</span> <span class="n">license</span>
+        <span class="k">except</span> <span class="nb">KeyError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+        <span class="k">except</span> <span class="nb">ValueError</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">None</span>
+    <span class="k">return</span> <span class="bp">None</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s">"license.csv"</span><span class="p">,</span> <span class="s">"w"</span><span class="p">,</span> <span class="n">newline</span><span class="o">=</span><span class="s">""</span><span class="p">)</span> <span class="k">as</span> <span class="n">csvfile</span><span class="p">:</span>
+    <span class="n">writer</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">writer</span><span class="p">(</span><span class="n">csvfile</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="s">'excel'</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">crate_name</span> <span class="ow">in</span> <span class="n">walk_index</span><span class="p">(</span><span class="n">INDEX_PATH</span><span class="p">):</span>
+        <span class="n">license</span> <span class="o">=</span> <span class="n">get_license</span><span class="p">(</span><span class="n">crate_name</span><span class="p">)</span>
+        <span class="n">writer</span><span class="o">.</span><span class="n">writerow</span><span class="p">([</span><span class="n">crate_name</span><span class="p">,</span> <span class="n">license</span><span class="p">])</span>
+        <span class="c"># The crates.io API will cut you off if you</span>
+        <span class="c"># don't throttle your requests a bit</span>
+        <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span></code></pre></figure>
+
+Ok, so now we have a nice `.csv` file with the name of the crate and the license string it
+uses. Now, lets re-read that information back in, and count licenses:
+
+<figure class="highlight"><pre><code class="language-python" data-lang="python"><span class="kn">import</span> <span class="nn">csv</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">Counter</span>
+
+<span class="n">license_counter</span> <span class="o">=</span> <span class="n">Counter</span><span class="p">()</span>
+
+<span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s">"license.csv"</span><span class="p">)</span> <span class="k">as</span> <span class="n">csvfile</span><span class="p">:</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">csv</span><span class="o">.</span><span class="n">reader</span><span class="p">(</span><span class="n">csvfile</span><span class="p">,</span> <span class="n">dialect</span><span class="o">=</span><span class="s">'excel'</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">crate_name</span><span class="p">,</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">data</span><span class="p">:</span>
+        <span class="c"># some projects multi-license, and they almost always use a '/' to join</span>
+        <span class="c"># the license names</span>
+        <span class="n">licenses</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s">"/"</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">license</span> <span class="ow">in</span> <span class="n">licenses</span><span class="p">:</span>
+            <span class="c"># we just want the general class of the license,</span>
+            <span class="c"># so the trailing '+' characters are unnecessary</span>
+            <span class="n">cleaned</span> <span class="o">=</span> <span class="n">license</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s">"+"</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">cleaned</span><span class="p">:</span>
+                <span class="n">license_counter</span><span class="o">.</span><span class="n">update</span><span class="p">([</span><span class="n">cleaned</span><span class="p">])</span>
+
+<span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">license_counter</span><span class="o">.</span><span class="n">most_common</span><span class="p">():</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">"{x:30}{n}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">))</span></code></pre></figure>
+
+## Results
+
+So what were the results? Well, my intuition was about half correct. The top 2
+most-used licenses were the MIT license and Apache-2.0. After that the number
+of projects using a particular license drops off considerably, with the
+BSD-3-Clause coming in 3rd. The Mozilla Public License came in 4th. I did not
+have the MPL on my list, which was obviously foolish, considering Rust is a
+Mozilla project. "non-standard" came in 5th, but that is kind of a wash because
+it appears to be a kind of "default value" that cargo (or crates.io) gives the
+project when they don't have a "license" key in their configuration, but rather
+a "license-file" which has a path. The handful of these that I looked at were
+using MIT, but just didn't name it in their `Cargo.toml` configs. It made me
+chuckle, but the "Unlicense" came in 6th. The GPL-3.0 is at 7, and the
+BSD-2-Clause at 8th.  So all the licenses from my list were in the top 8, but
+were definitely not the top 5. Here is a table of my counts:
+
+        mit                           2333
+        apache-2.0                    488
+        bsd-3-clause                  63
+        mpl-2.0                       52
+        non-standard                  52
+        unlicense                     49
+        gpl-3.0                       47
+        bsd-2-clause                  40
+        cc0-1.0                       38
+        lgpl-3.0                      31
+        zlib                          26
+        isc                           24
+        wtfpl                         23
+        lgpl-2.1                      19
+        gpl-2.0                       18
+        bsl-1.0                       15
+        agpl-3.0                      9
+        aml                           4
+        cc-by-nc-4.0                  2
+        python-2.0                    2
+        apache-1.0                    1
+        agpl-1.0                      1
+        lgpl-2.0                      1
+        nlpl                          1
+        ncsa                          1
+        zlib-acknowledgement          1
+        ijg                           1
+        libpng                        1
+        mpl-2.0-no-copyleft-exception 1
+        zed                           1
+        miros                         1
+        mpl-1.1                       1
+
+## Conclusion
+
+Given the results, I am probably going to take the GPL-3.0 and BSD-2-Clause out
+of my PR, and add the MPL in. The "Unlicense" seems to be slightly controversial
+(at least from the little digging I did on the internet), but I don't want to
+exclude it while including licenses that were represented less in the data, so
+taking the top 4 instead of the top 5 seems more fair.
+
+I am not sure if the cargo devs will be interested in my feature when I get a
+PR opened, but either way I enjoyed this quick little dip into the crates.io
+ecosystem.
+
+#### Notes
+
+If you want to see the data I worked from, and the scripts I used, there
+is a git repo up with all the files, at
+[https://github.com/pwoolcoc/crates.io-license-survey](https://github.com/pwoolcoc/crates.io-license-survey)
+]]></content:encoded>
+      <dc:date>2015-09-24T00:00:00-04:00</dc:date>
+    </item>
+    <item>
+      <title>Goodbye 2014, Hello 2015</title>
+      <link>http://paul.woolcock.us/posts/end-of-the-year.html</link>
+      <description><![CDATA[Well, the year is almost over. It has been…a year. Some great things,
+some terrible things, some in between, and I thought I would just jot
+down some thoughts about it.  (I probably won’t touch on any of the
+terrible things though. Read the news if you want to hear about that.)
+
+]]></description>
+      <pubDate>Wed, 31 Dec 2014 00:00:00 -0500</pubDate>
+      <guid>http://paul.woolcock.us/posts/end-of-the-year.html</guid>
+      <content:encoded><![CDATA[Well, the year is almost over. It has been...a year. Some great things,
+some terrible things, some in between, and I thought I would just jot
+down some thoughts about it.  (I probably won't touch on any of the
+terrible things though. Read the news if you want to hear about that.)
+
+Gobo turned 2 this past fall, and it has been remarkable watching what
+he has become. He has the best little personality, is (almost) always
+happy, and is really starting to get his words together. He is even
+stringing together 4-or-5 word sentences, and I'll tell ya, you just
+have to look on with awe when he looks at you and asks a real,
+honest-to-god question. My favorite is when I emerge from the basement
+office and he asks, "Daddy, are you all done working?" with a hopeful
+look in his eyes.
+
+Our 2nd child is due any day now, so it has been a bit of a rough couple
+weeks here at the Woolcock household. We never found out the sex of the
+baby, so we'll see whether it is a
+[Wembly](http://muppet.wikia.com/wiki/Wembley_Fraggle) or a
+[Red](http://muppet.wikia.com/wiki/Red_Fraggle). Or should it be
+[Boober](http://muppet.wikia.com/wiki/Boober_Fraggle) or
+[Mokey](http://muppet.wikia.com/wiki/Mokey_Fraggle)? We'll see ;-).
+(probably not Boober...)
+
+Having the baby due at this time meant I couldn't go to the winter hike
+this year. Which is disappointing, to be sure, but there really isn't a
+better reason to miss the hike than, "I am going to be a father again."
+I do kind of hope that the baby comes either in the next day or two, or
+waits until the 6th or 7th, though I realize that is an incredibly
+selfish thing to want. I would prefer not to miss the kid's birthday in the
+future, but I would also like to continue going on the hike after this
+year.
+
+I know, I know, selfish.
+
+In philisophical news, this is the year I really started implementing
+some Stoic philosophy in my everyday life. It has been a great learning
+experience, and I really seem to have made a lot of progress with my inner
+monologue. If you are so inclined, go read some Stoic philosophy. I think
+Project Gutenberg has some Seneca, and Amazon has a bunch of translations of
+Epictetus, Seneca, and Marcus Aurelius. For contemporary stuff, I enjoyed this
+book, about
+[Stoicism and CBT](http://paul.woolcock.us/posts/stoicism-cbt.html),
+and I'm current enjoying
+[A Guide to the Good Life: The Ancient Art of Stoic Joy](http://amzn.com/B0040JHNQG).
+
+This is also the year I started particpating in the
+[Rust](http://www.rust-lang.org) community. I had hung out a bit in
+[#rust](irc://irc.mozilla.org/#rust) a couple years ago, when the
+language was almost brand new, but lost interest at some point. This year I
+really got back into it, and started making some contributions to some
+Rust projects, including the package manager for the language,
+[Cargo](http://crates.io). I really hope to be able to do more work with
+Rust in the future.
+
+(I put a Rust sticker on my laptop, and got a t-shirt, so, you know, I am
+like, sooooooo committed now)
+
+Oh, I almost forgot. I got a Mandolin as a gift for festivus this year.
+Anybody want to start a Bluegrass/Newgrass group? :)
+]]></content:encoded>
+      <dc:date>2014-12-31T00:00:00-05:00</dc:date>
+    </item>
+    <item>
+      <title>Using Rust from Perl and Julia</title>
+      <link>http://paul.woolcock.us/posts/rust-perl-julia-ffi.html</link>
+      <description><![CDATA[With the recent runtime removal,
+utilizing Rust libraries from other languages has gotten even better. In
+this post I am going to take the Rust library that @wycats used in
+this post,
+and use it from both Perl 5, and Julia.
+
+]]></description>
+      <pubDate>Tue, 23 Dec 2014 00:00:00 -0500</pubDate>
+      <guid>http://paul.woolcock.us/posts/rust-perl-julia-ffi.html</guid>
+      <content:encoded><![CDATA[With the recent [runtime removal](https://github.com/rust-lang/rust/commit/0efafac398ff7f28c5f0fe756c15b9008b3e0534),
+utilizing [Rust](http://rust-lang.org/) libraries from other languages has gotten even better. In
+this post I am going to take the Rust library that <a class="fa fa-twitter mentions-twitter" href="https://twitter.com/wycats">@wycats</a> used in
+[this post](http://blog.skylight.io/bending-the-curve-writing-safe-fast-native-gems-with-rust/),
+and use it from both Perl 5, and [Julia](http://julialang.org).
+
+## Getting started
+{: .h2 }
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="gp">$ </span>cargo new points
+<span class="gp">$ </span><span class="nb">cd </span>points
+<span class="gp">$ </span>mkdir perl julia
+<span class="gp">$ </span>touch Makefile perl/points.pl julia/points.jl</code></pre></figure>
+
+Fix cargo to create a .so instead of a .rlib:
+
+<figure class="highlight"><pre><code class="language-toml" data-lang="toml"><span class="c"># Cargo.toml</span>
+<span class="nn">[package]</span>
+
+<span class="py">name</span> <span class="p">=</span> <span class="s">"points"</span>
+<span class="py">version</span> <span class="p">=</span> <span class="s">"0.0.1"</span>
+<span class="py">authors</span> <span class="p">=</span> <span class="p">[</span><span class="s">"Paul Woolcock &lt;paul@woolcock.us&gt;"</span><span class="p">]</span>
+
+<span class="nn">[lib]</span>
+
+<span class="py">name</span> <span class="p">=</span> <span class="s">"points"</span>
+<span class="py">crate-type</span> <span class="p">=</span> <span class="nn">["dylib"]</span></code></pre></figure>
+
+Also, `cargo` appends a fingerprint to the lib name, so let's
+use a Makefile that will fix it so we have an unchanging lib name:
+
+<figure class="highlight"><pre><code class="language-make" data-lang="make"><span class="c"># Makefile
+</span>
+<span class="nl">all</span><span class="o">:</span>
+	cargo build
+	ln -fs <span class="nv">$(PWD)</span>/target/libpoints-<span class="k">*</span>.so <span class="nv">$(PWD)</span><span class="err">/target/libpoints.so</span></code></pre></figure>
+
+Ok, let's get started writing the `points` library:
+
+First, we bring some traits into scope from the stdlib that we will
+need. Then we define our data structures.
+
+<figure class="highlight"><pre><code class="language-rust" data-lang="rust"><span class="c">// src/lib.rs</span>
+
+<span class="k">use</span> <span class="nn">std</span><span class="p">::</span><span class="nn">num</span><span class="p">::{</span><span class="n">Int</span><span class="p">,</span> <span class="n">Float</span><span class="p">};</span>
+
+<span class="cp">#[deriving(Copy)]</span>
+<span class="k">pub</span> <span class="k">struct</span> <span class="n">Point</span> <span class="p">{</span> <span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">int</span> <span class="p">}</span>
+
+<span class="k">struct</span> <span class="n">Line</span> <span class="p">{</span> <span class="n">p1</span><span class="p">:</span> <span class="n">Point</span><span class="p">,</span> <span class="n">p2</span><span class="p">:</span> <span class="n">Point</span> <span class="p">}</span>
+
+<span class="k">impl</span> <span class="n">Line</span> <span class="p">{</span>
+    <span class="k">pub</span> <span class="k">fn</span> <span class="nf">length</span><span class="p">(</span><span class="o">&amp;</span><span class="k">self</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="nb">f64</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="n">xdiff</span> <span class="o">=</span> <span class="k">self</span><span class="py">.p1.x</span> <span class="o">-</span> <span class="k">self</span><span class="py">.p2.x</span><span class="p">;</span>
+        <span class="k">let</span> <span class="n">ydiff</span> <span class="o">=</span> <span class="k">self</span><span class="py">.p1.y</span> <span class="o">-</span> <span class="k">self</span><span class="py">.p2.y</span><span class="p">;</span>
+        <span class="p">((</span><span class="n">xdiff</span><span class="nf">.pow</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="o">+</span> <span class="n">ydiff</span><span class="nf">.pow</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span> <span class="k">as</span> <span class="nb">f64</span><span class="p">)</span><span class="nf">.sqrt</span><span class="p">()</span> 
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c">// rustc 0.13.0-nightly (62fb41c32 2014-12-23 02:41:48 +0000)</span></code></pre></figure>
+
+Next, we need to define the functions that we will export for use from
+the other languages.
+
+<figure class="highlight"><pre><code class="language-rust" data-lang="rust"><span class="err">#</span><span class="p">[</span><span class="n">no_mangle</span><span class="p">]</span>
+<span class="k">pub</span> <span class="k">extern</span> <span class="s">"C"</span> <span class="k">fn</span> <span class="nf">make_point</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="nb">Box</span><span class="o">&lt;</span><span class="n">Point</span><span class="o">&gt;</span> <span class="p">{</span>
+    <span class="k">box</span> <span class="n">Point</span> <span class="p">{</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">y</span> <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="cp">#[no_mangle]</span>
+<span class="k">pub</span> <span class="k">extern</span> <span class="s">"C"</span> <span class="k">fn</span> <span class="nf">get_distance</span><span class="p">(</span><span class="n">p1</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">Point</span><span class="p">,</span> <span class="n">p2</span><span class="p">:</span> <span class="o">&amp;</span><span class="n">Point</span><span class="p">)</span> <span class="k">-&gt;</span> <span class="nb">f64</span> <span class="p">{</span>
+    <span class="n">Line</span> <span class="p">{</span> <span class="n">p1</span><span class="p">:</span> <span class="o">*</span><span class="n">p1</span><span class="p">,</span> <span class="n">p2</span><span class="p">:</span> <span class="o">*</span><span class="n">p2</span> <span class="p">}</span><span class="nf">.length</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="c">// rustc 0.13.0-nightly (62fb41c32 2014-12-23 02:41:48 +0000)</span></code></pre></figure>
+
+Finally, add a quick test so we can make sure we get the same result
+everywhere.
+
+<figure class="highlight"><pre><code class="language-rust" data-lang="rust"><span class="err">#</span><span class="p">[</span><span class="nf">cfg</span><span class="p">(</span><span class="n">test</span><span class="p">)]</span>
+<span class="k">mod</span> <span class="n">tests</span> <span class="p">{</span>
+    <span class="k">use</span> <span class="nn">super</span><span class="p">::{</span><span class="n">Point</span><span class="p">,</span> <span class="n">get_distance</span><span class="p">};</span>
+    <span class="k">use</span> <span class="nn">std</span><span class="p">::</span><span class="nn">num</span><span class="p">::</span><span class="n">FloatMath</span><span class="p">;</span>
+
+    <span class="cp">#[test]</span>
+    <span class="k">fn</span> <span class="nf">test_get_distance</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">let</span> <span class="n">p1</span> <span class="o">=</span> <span class="n">Point</span> <span class="p">{</span> <span class="n">x</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="mi">2</span> <span class="p">};</span>
+        <span class="k">let</span> <span class="n">p2</span> <span class="o">=</span> <span class="n">Point</span> <span class="p">{</span> <span class="n">x</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="mi">4</span> <span class="p">};</span>
+        <span class="k">assert</span><span class="o">!</span><span class="p">((</span><span class="nf">get_distance</span><span class="p">(</span><span class="o">&amp;</span><span class="n">p1</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">p2</span><span class="p">)</span><span class="nf">.abs_sub</span><span class="p">(</span><span class="mf">2.828427</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">0.01f64</span><span class="p">));</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="c">// rustc 0.13.0-nightly (62fb41c32 2014-12-23 02:41:48 +0000)</span></code></pre></figure>
+
+Now just compile, and we are done writing our Rust library.
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="gp">$ </span>cargo <span class="nb">test
+   </span>Compiling points v0.0.1 <span class="o">(</span>file:///home/paul/projects/points<span class="o">)</span>
+     Running target/points-56b2e7a44489e119
+
+running 1 <span class="nb">test
+test </span>tests::test_get_distance ... ok
+
+<span class="nb">test </span>result: ok. 1 passed; 0 failed; 0 ignored; 0 measured
+
+   Doc-tests points
+
+running 0 tests
+
+<span class="nb">test </span>result: ok. 0 passed; 0 failed; 0 ignored; 0 measured
+<span class="gp">$ </span>make
+cargo build
+   Compiling points v0.0.1 <span class="o">(</span>file:///home/paul/projects/points<span class="o">)</span>
+ln -fs /home/paul/projects/points/target/libpoints-<span class="k">*</span>.so /home/paul/projects/points/target/libpoints.so</code></pre></figure>
+
+
+## Using `libpoints` from perl
+{: .h2 }
+
+We will be using `FFI::Raw` instead of XS. `FFI::Raw` is a perl module that
+wraps `libffi`, and makes this very easy:
+
+<figure class="highlight"><pre><code class="language-perl" data-lang="perl"><span class="c1">#!/usr/bin/env perl</span>
+<span class="k">use</span> <span class="nv">v5</span><span class="mf">.10</span><span class="p">;</span>
+<span class="k">use</span> <span class="nv">strict</span><span class="p">;</span>
+<span class="k">use</span> <span class="nv">warnings</span><span class="p">;</span>
+
+<span class="k">use</span> <span class="nn">FFI::</span><span class="nv">Raw</span><span class="p">;</span>
+
+<span class="k">my</span> <span class="nv">$make_point</span> <span class="o">=</span> <span class="nn">FFI::</span><span class="nv">Raw</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span>
+    <span class="s">"target/libpoints.so"</span><span class="p">,</span> <span class="c1"># library</span>
+    <span class="s">"make_point"</span><span class="p">,</span> <span class="c1"># function name</span>
+    <span class="nn">FFI::Raw::</span><span class="nv">ptr</span><span class="p">,</span> <span class="c1"># return type</span>
+    <span class="nn">FFI::Raw::</span><span class="nv">int</span><span class="p">,</span> <span class="nn">FFI::Raw::</span><span class="nv">int</span> <span class="c1"># argument types</span>
+<span class="p">);</span>
+
+<span class="k">my</span> <span class="nv">$get_distance</span> <span class="o">=</span> <span class="nn">FFI::</span><span class="nv">Raw</span><span class="o">-&gt;</span><span class="k">new</span><span class="p">(</span>
+    <span class="s">"target/libpoints.so"</span><span class="p">,</span>
+    <span class="s">"get_distance"</span><span class="p">,</span>
+    <span class="nn">FFI::Raw::</span><span class="nv">double</span><span class="p">,</span>
+    <span class="nn">FFI::Raw::</span><span class="nv">ptr</span><span class="p">,</span> <span class="nn">FFI::Raw::</span><span class="nv">ptr</span>
+<span class="p">);</span>
+
+<span class="k">my</span> <span class="nv">$one_point</span> <span class="o">=</span> <span class="nv">$make_point</span><span class="o">-&gt;</span><span class="nv">call</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">);</span>
+<span class="k">my</span> <span class="nv">$two_point</span> <span class="o">=</span> <span class="nv">$make_point</span><span class="o">-&gt;</span><span class="nv">call</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">4</span><span class="p">);</span>
+
+<span class="k">my</span> <span class="nv">$result</span> <span class="o">=</span> <span class="nv">$get_distance</span><span class="o">-&gt;</span><span class="nv">call</span><span class="p">(</span><span class="nv">$one_point</span><span class="p">,</span> <span class="nv">$two_point</span><span class="p">);</span>
+
+<span class="nv">say</span> <span class="nv">$result</span><span class="p">;</span></code></pre></figure>
+
+Now, let's run it and see what we get:
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="gp">$ </span>perl perl/points.pl
+2.82842712474619</code></pre></figure>
+
+## Using `libpoints` from Julia
+{: .h2 }
+
+[Julia](http://julialang.org) is even easier to use with our Rust
+library, as it has a C FFI builtin to the language:
+
+<figure class="highlight"><pre><code class="language-julia" data-lang="julia">function make_point(a::Int, b::Int)
+  ccall(
+      (:make_point, "./target/libpoints"),  # function name &amp; library location
+      Ptr{Void}, # return type
+      (Int64, Int64),  # argument types
+      a, b)  # arguments
+end
+
+function get_distance(a::Ptr{Void}, b::Ptr{Void})
+  ccall(
+      (:get_distance, "./target/libpoints"),
+      Float64,
+      (Ptr{Void}, Ptr{Void}),
+      a, b)
+end
+
+t = make_point(2, 2)
+u = make_point(4, 4)
+
+println(get_distance(t, u))</code></pre></figure>
+
+<figure class="highlight"><pre><code class="language-bash" data-lang="bash"><span class="gp">$ </span>julia julia/points.jl
+2.8284271247461903</code></pre></figure>
+
+]]></content:encoded>
+      <dc:date>2014-12-23T00:00:00-05:00</dc:date>
+    </item>
+    <item>
+      <title>Elixir and the Pipe macro</title>
+      <link>http://paul.woolcock.us/posts/elixir-pipe.html</link>
+      <description><![CDATA[In my Simple Python Generator post, I showed how you could use generators to make a pipeline of functions to transform data. Today I am going to show how cool this same technique looks when used in Elixir.
+
+]]></description>
+      <pubDate>Fri, 27 Jun 2014 00:00:00 -0400</pubDate>
+      <guid>http://paul.woolcock.us/posts/elixir-pipe.html</guid>
+      <content:encoded><![CDATA[In my [Simple Python Generator](http://paul.woolcock.us/posts/simple-python-generator-example.html) post, I showed how you could use generators to make a pipeline of functions to transform data. Today I am going to show how cool this same technique looks when used in [Elixir](http://elixir-lang.org).
+
+In my python example, we assembled our pipeline like so:
+
+    >>> for result in double(cube(plus_one_half(xrange(10)))):
+    ...     print(result)
+
+You see how we had to write the functions in the reverse order than they are actually executed?
+
+Elixir solves this readability issue through use of the the Pipe macro. Here is the code:
+
+    iex(1)> 0..9 |>
+    ...(1)      Stream.map(&(&1 + 0.5)) |> 
+    ...(1)      Stream.map(fn x -> x * x * x end) |>
+    ...(1)      Stream.map(&(&1 * 2)) |>
+    ...(1)      Enum.into([])
+    [0.25, 6.75, 31.25, 85.75, 182.25, 332.75, 549.25, 843.75, 1228.25, 1714.75]    
+
+Isn't that so much better? Even more, the Stream module implements lazy iterators, so we get the same benefits that the python generators give us, in terms of memory usage.
+]]></content:encoded>
+      <dc:date>2014-06-27T00:00:00-04:00</dc:date>
+    </item>
+    <item>
+      <title>Stoicism & CBT</title>
+      <link>http://paul.woolcock.us/posts/stoicism-cbt.html</link>
+      <description><![CDATA[The Philosophy of Cognitive-Behavioural Therapy (non-affiliate link)
+]]></description>
+      <pubDate>Wed, 01 Jan 2014 00:00:00 -0500</pubDate>
+      <guid>http://paul.woolcock.us/posts/stoicism-cbt.html</guid>
+      <content:encoded><![CDATA[[The Philosophy of Cognitive-Behavioural Therapy](http://www.amazon.com/Philosophy-Cognitive-Behavioural-Therapy-CBT-Psychotherapy-ebook/dp/B005TQU5KA/ref=sr_1_1?ie=UTF8&qid=1388628876&sr=8-1&keywords=Stoicism+CBT) (non-affiliate link)
+]]></content:encoded>
+      <dc:date>2014-01-01T00:00:00-05:00</dc:date>
+    </item>
+    <item>
+      <title>Simple Python Generator Example</title>
+      <link>http://paul.woolcock.us/posts/python-generators.html</link>
+      <description><![CDATA[So I have read this amazing lesson before: Generator Tricks for
+System Programmers, and I thought I would write up a quick example to show the
+effect of the “pipeline” that strings of generators set up. No long
+tutorial here, just a simple example.
+
+]]></description>
+      <pubDate>Mon, 18 Mar 2013 00:00:00 -0400</pubDate>
+      <guid>http://paul.woolcock.us/posts/python-generators.html</guid>
+      <content:encoded><![CDATA[So I have read this amazing lesson before: [Generator Tricks for
+System Programmers](http://www.dabeaz.com/generators/), and I thought I would write up a quick example to show the
+effect of the “pipeline” that strings of generators set up. No long
+tutorial here, just a simple example.
+
+Here we have three functions, each one performing some numeric operation
+on each entry in a list of numbers:
+
+    >>> def plus_one_half(nums):
+    ...     for num in nums:
+    ...         print("adding 1/2 to {num}".format(num=num))
+    ...         yield (num + 0.5)
+
+    >>> def double(nums):
+    ...     for num in nums:
+    ...         print("doubling {num}".format(num=num))
+    ...         yield (num * 2)
+
+    >>> def cube(nums):
+    ...     for num in nums:
+    ...         print("cubing {num}".format(num=num))
+    ...         yield (num ** 3)
+
+Notice that all of them are actually generators (not functions), as they
+use the yield keyword instead of return.
+
+When we set up a generator pipeline, we can see how each value is only
+retrieved when it is needed:
+
+    >>> for result in double(cube(plus_one_half(xrange(10)))):
+    ...     print("result is {result}".format(result=result))
+    ...     print("---")
+
+This prints out:
+
+    adding 1/2 to 0
+    cubing 0.5
+    doubling 0.125
+    result is: 0.25
+    ---
+    adding 1/2 to 1
+    cubing 1.5
+    doubling 3.375
+    result is: 6.75
+    ---
+    adding 1/2 to 2
+    cubing 2.5
+    doubling 15.625
+    result is: 31.25
+    ---
+    adding 1/2 to 3
+    cubing 3.5
+    doubling 42.875
+    result is: 85.75
+    ---
+    adding 1/2 to 4
+    cubing 4.5
+    doubling 91.125
+    result is: 182.25
+    ---
+    adding 1/2 to 5
+    cubing 5.5
+    doubling 166.375
+    result is: 332.75
+    ---
+    adding 1/2 to 6
+    cubing 6.5
+    doubling 274.625
+    result is: 549.25
+    ---
+    adding 1/2 to 7
+    cubing 7.5
+    doubling 421.875
+    result is: 843.75
+    ---
+    adding 1/2 to 8
+    cubing 8.5
+    doubling 614.125
+    result is: 1228.25
+    ---
+    adding 1/2 to 9
+    cubing 9.5
+    doubling 857.375
+    result is: 1714.75
+    ---
+
+Here we can clearly see how each generator runs until it yields, then
+passes control to the next generator in the pipeline. Neat!
+
+If you did this without generators, you would have to change the
+functions to build and return lists.
+
+(Actually, you would probably use list comprehensions, but we are going
+to do it this way so we can still easily include the call to print)
+
+    >>> def plus_one_half(nums):
+    ...     result = []
+    ...     for num in nums:
+    ...         print("adding 1/2 to {num}".format(num=num))
+    ...         result.append(num + 0.5)
+    ...     return result
+
+    >>> def double(nums):
+    ...     result = []
+    ...     for num in nums:
+    ...         print("doubling {num}".format(num=num))
+    ...         result.append(num * 2)
+    ...     return result
+
+    >>> def cube(nums):
+    ...     result = []
+    ...     for num in nums:
+    ...         print("cubing {num}".format(num=num))
+    ...         result.append(num ** 3)
+    ...     return result
+
+The code is similar, except now we need a list to store the results of
+the computations in each function. It also means that instead of
+generating a value and then passing control to the next function, each
+function performs it’s transformation on the entire list of numbers
+before returning, as we can see here:
+
+    >>> for result in double(cube(plus_one_half(xrange(10)))):
+    ...     print("result is {result}".format(result=result))
+    ...     print("---")
+
+and the results:
+
+    adding 1/2 to 0
+    adding 1/2 to 1
+    adding 1/2 to 2
+    adding 1/2 to 3
+    adding 1/2 to 4
+    adding 1/2 to 5
+    adding 1/2 to 6
+    adding 1/2 to 7
+    adding 1/2 to 8
+    adding 1/2 to 9
+    cubing 0.5
+    cubing 1.5
+    cubing 2.5
+    cubing 3.5
+    cubing 4.5
+    cubing 5.5
+    cubing 6.5
+    cubing 7.5
+    cubing 8.5
+    cubing 9.5
+    doubling 0.125
+    doubling 3.375
+    doubling 15.625
+    doubling 42.875
+    doubling 91.125
+    doubling 166.375
+    doubling 274.625
+    doubling 421.875
+    doubling 614.125
+    doubling 857.375
+    result is: 0.25
+    ---
+    result is: 6.75
+    ---
+    result is: 31.25
+    ---
+    result is: 85.75
+    ---
+    result is: 182.25
+    ---
+    result is: 332.75
+    ---
+    result is: 549.25
+    ---
+    result is: 843.75
+    ---
+    result is: 1228.25
+    ---
+    result is: 1714.75
+    ---
+
+As a result of these differences, the generator pipeline needs to keep
+much less information in memory at any given time than the list example.
+
+]]></content:encoded>
+      <dc:date>2013-03-18T00:00:00-04:00</dc:date>
+    </item>
+    <item>
+      <title>Thinking Functionally</title>
+      <link>http://paul.woolcock.us/posts/thinking-functionally.html</link>
+      <description><![CDATA[Easy problem made hard
+
+]]></description>
+      <pubDate>Fri, 16 Mar 2012 00:00:00 -0400</pubDate>
+      <guid>http://paul.woolcock.us/posts/thinking-functionally.html</guid>
+      <content:encoded><![CDATA[## Easy problem made hard
+
+I have been messing around with [Clojure](http://clojure.org) quite a bit
+lately, and have been enjoying the challenges that come from learning a
+programming language that uses a different paradigm than what I am used to.
+
+Today, I was messing around with Clojure's java interop and writing some Swing
+stuff.  I won't mention the project yet, because I am still kicking it around,
+but I am pretty excited about it.
+
+Anyway, I came across a simple problem, and because I am not thinking “functionally”
+enough yet, I made it much harder than it needed to be.
+
+The problem boiled down to this: lets say you need an array of objects that are
+mostly the same, except for the fact that each object includes an incremented
+integer.  So, for fun, let's say we want to end up with this:
+
+    '("This is number: 0" "This is number: 1" "This is number: 2"
+      "This is number: 3" "This is number: 4")
+
+Easy, right?  Of course, my imperative brain immediately starting
+thinking of what kind of looping construct I would need to use to get this
+result.  My first thought was that there had to be a function in `clojure.core`
+that could do this.  Of course, I started looking in the wrong direction.
+My first thought was something like this:
+
+    ; Clojure experts: Please don't cringe too hard, you'll pull something
+
+    (defn make-string [num]
+	  (format "This is number: %d" num))
+
+    (def string-list
+      (into '()
+        (loop [i 0]
+          (if (< i 5)
+              (make-string i)
+            (recur (+ i 1))))))
+
+Of course, this is pretty obviously a case of trying to apply imperative thinking
+to a functional language.  I'm telling the computer *how* to do
+something instead of telling it *what* to do.
+
+I also did some messing around with the `repeatedly` function, as well as the
+`take-while` function, but I am not going to include those examples here, as I
+feel stupid enough already.
+
+Finally, I realized how much harder I was making this than I really needed to:
+
+    (map make-string (range 5))
+
+Or, if I wanted to package this up into a little generator function:
+
+    (defn make-strings []
+      (map make-string (range)))
+
+So that I could later do something like this:
+
+    (take 28 (make-strings))
+
+It has taken a little getting used to, but I think I am starting to get
+the hang of it.  I have also started reading
+[On Lisp](http://www.paulgraham.com/onlisp.html) by Paul Graham,
+and even though he is writing in Common Lisp in it, his points about bottom
+up design have really helped me in thinking about how to structure my
+Clojure programs.
+
+]]></content:encoded>
+      <dc:date>2012-03-16T00:00:00-04:00</dc:date>
+    </item>
+    <dc:date>2015-09-24T00:00:00-04:00</dc:date>
+  </channel>
+</rss>
