@@ -9,3 +9,5 @@ pages:
     - public
   only:
   - master
+  cname:
+  - paul.woolcock.us
