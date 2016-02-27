@@ -1,0 +1,12 @@
+---
+layout: default
+title: Paul Woolcock
+heading: Paul Woolcock
+---
+<div class="posts" xmlns:dc="http://purl.org/dc/elements/1.1/">
+{% for post in site.posts %}
+	<div class="post" about="{{ post.url }}">
+		<h2 class="h3"><a property="dc:title" href="{{ post.url }}">{{ post.title }}</a></h2>
+	</div>
+{% endfor %}
+</div>

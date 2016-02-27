@@ -1,0 +1,115 @@
+/* ===
+ * Lists
+ * === */
+
+ul, ol { margin: 1em 0; padding: 0 0 0 40px; }
+dd { margin: 0 0 0 40px; }
+nav ul, nav ol { list-style: none; list-style-image: none; margin: 0; padding: 0; }
+
+/* ===
+ * Primary (Mobile-first) Styles
+ * === */
+
+ body { font-family: "Palatino Linotype", Palatino, "URW Palladio L", "Book Antiqua", Baskerville, "Bookman Old Style", "Bitstream Charter",
+					"Nimbus Roman No9 L", Garamond, "New Century Schoolbook", "Century Schoolbook", "Century Schoolbook L",
+				 	Georgia, serif; }
+p { font-size: 1.3em; }
+
+
+pre { background-color: #eee; }
+code { font-size: .9em; background-color: #eee;
+       font-family: "Monaco","Courier New","DejaVu Sans Mono","Bitstream Vera Sans Mono",monospace !important; }
+ .h1, .h2 { font-family: "Segoe UI", Candara, "Bitstream Vera Sans", "DejaVu Sans", "Trebuchet MS", Verdana, sans-serif; }
+ 
+ .h1 { font-size: 36px; }
+.h2 { font-size: 28px; }
+.left-side { border-bottom: solid 1px #ccc; }
+.left-side > * { margin: 10px; }
+.left-side .h1 { text-align: left; }
+a { text-decoration: none; }
+a:visited { color: #00e; }
+.left-side .float-right { float: right; display: block; margin-top: 24px; }
+.right-side { margin: 10px; }
+/* .right-side .h2 { text-align: center; } */
+.right-side .license { text-align: center; font-size: 75%; border-top: solid 1px #ccc; margin: 10px auto 20px; padding-top: 10px; }
+footer nav ul li { border-top: solid 1px #ccc; width: 100%; text-align: center; }
+footer nav ul li a { text-decoration: none; display: block; margin: 15px 0; font-size: 20px; }
+.hide-on-mobile { display: none !important; visibility: hidden !important; }
+.hide-on-desktop { display: block !important; visibility: visible !important; }
+.light-grey { color: rgba(190, 190, 190, 0.8); }
+
+
+/* ===
+ * Media Queries
+ * === */
+
+@media only screen and (min-width: 480px) {
+}
+
+@media only screen and (min-width: 768px) {
+
+html,body { height: 100%; }
+
+.left-side { background: url(/images/soft_wallpaper.png) repeat transparent; }
+
+.left-side > * { margin: 0; }
+
+.h1, .h2 { margin-bottom: 21px; }
+.h1 { font-size: 32px; padding-top: 0; line-height: 36px; }
+.h2 { font-size: 28px; }
+.h3 { font-size: 24px; margin-top: 8px; margin-bottom: 8px; }
+
+.left-side { position: fixed; width: 200px; min-height: 100%;  border-right: solid 3px #aaa; float: left;
+	 			border-bottom: none; }
+.left-side nav ul { font-size: 1.1em; }
+.right-side { width: 668px; float: left; margin: 0 0 0 250px; }
+
+.posts .post p { margin-top: 0; margin-bottom: 10px; }
+
+/*.left-side .h1 { margin-top: 50px; margin-right: 25px; text-align: right; border-bottom: none; }*/
+.left-side nav { margin-top: 50px; }
+.right-side .h1, .right-side .h2 { margin-top: 50px; }
+nav ul li { text-align: left; margin-left: 25px; }
+
+.hide-on-desktop { display: none !important; visibility: hidden !important; }
+.hide-on-mobile { display: block !important; visibility: visible !important; }
+
+}
+
+/* ===
+ * Non-semantic helper classes
+ * === */
+ .italic { font-style: italic; }
+ 
+/* My Styles here */
+
+.ir { display: block; border: 0; text-indent: -999em; overflow: hidden; background-color: transparent; background-repeat: no-repeat; text-align: left; direction: ltr; *line-height: 0; }
+.ir br { display: none; }
+
+.hidden { display: none !important; visibility: hidden; }
+.visuallyhidden { border: 0; clip: rect(0 0 0 0); height: 1px; margin: -1px; overflow: hidden; padding: 0; position: absolute; width: 1px; }
+.visuallyhidden.focusable:active, .visuallyhidden.focusable:focus {clip: auto; height: auto; margin: 0; overflow: visible; position: static; width: auto; }
+.invisible { visibility: hidden; }
+.clearfix:before, .clearfix:after { content: "", display: table; }
+.clearfix:after {clear: both; }
+.clearfix { *zoom: 1; }
+
+/* ===
+ * Print styles
+ * === */
+
+@media print {
+  * { background: transparent !important; color: black !important; box-shadow: none !important; text-shadow: none !important; filter: none !important; -ms-filter: none !important; }
+  a, a:visited { text-decoration: underline; }
+  a[href]:after { content: " (" attr(href) ")"; }
+  abbr[title]:after { content " (" attr(title) ")"; }
+  .ir a:after, a[href^="javascript:"]:after, a[href^="#"]:after { content: ""; }
+  pre, blockquote { border: 1px solid #999; page-break-inside: avoid; }
+  thead { display: table-header-group; }
+  tr, img { page-break-inside: avoid; }
+  img { max-width: 100% !important; }
+  @page { margin: 0.5cm; }
+  p, h2, h3 { orphans: 3; widows: 3; }
+  h2, h3 { page-break-after: avoid; }
+}
+

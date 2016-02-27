@@ -1,0 +1,8 @@
+permalink: /posts/:title.html
+markdown: kramdown
+author: Paul Woolcock
+url: http://paul.woolcock.us
+name: Paul Woolcock
+exclude:
+  - Makefile
+
