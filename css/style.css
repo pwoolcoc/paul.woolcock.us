@@ -19,6 +19,7 @@ p { font-size: 1.3em; }
 pre { background-color: #eee; }
 code { font-size: .9em; background-color: #eee;
        font-family: "Monaco","Courier New","DejaVu Sans Mono","Bitstream Vera Sans Mono",monospace !important; }
+img { border: solid 1px #fee; }
  .h1, .h2 { font-family: "Segoe UI", Candara, "Bitstream Vera Sans", "DejaVu Sans", "Trebuchet MS", Verdana, sans-serif; }
  
  .h1 { font-size: 36px; }

@@ -15,7 +15,7 @@ publish:
 	mv _drafts/$(POST) _posts/
 
 server:
-	jekyll serve -w --incremental
+	bundle exec jekyll serve -w --incremental
 
 tarball: site
 	cd $(SITEDIR) && tar -Pczf $(TAR_GZ) .
@@ -25,7 +25,7 @@ deploy: tarball
 	ssh -t paul.woolcock.us 'cd /usr/share/nginx/www/paul.woolcock.us && /bin/tar -xzvmf $(TAR_GZ) && sudo nginx -s reload'
 
 site:
-	jekyll build --incremental
+	bundle exec jekyll build --incremental
 
 clean:
 	[ -d $(SITEDIR) ] && rm -rf $(SITEDIR)
