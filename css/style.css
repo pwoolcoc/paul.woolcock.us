@@ -38,6 +38,17 @@ footer nav ul li a { text-decoration: none; display: block; margin: 15px 0; font
 .hide-on-mobile { display: none !important; visibility: hidden !important; }
 .hide-on-desktop { display: block !important; visibility: visible !important; }
 .light-grey { color: rgba(190, 190, 190, 0.8); }
+.mastodon img {
+	height: 15px;
+	width: 15px;
+	padding: 0px;
+	margin: 0px;
+	vertical-align: middle;
+}
+
+.mastodon span {
+	margin-left: -5px;
+}
 
 
 /* ===
