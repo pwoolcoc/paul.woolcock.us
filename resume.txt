@@ -80,33 +80,41 @@ June 2008 - August 2009
 
 Skills
 
-Software Engineering : Expert in Perl, Python, and Javascript.
-Fluent in Erlang, Go, and PHP.
-Proficient in C, Java, Clojure, and C++.
-Experienced with web development frameworks like Django, Flask, and
-Laravel.
-Experienced with testing frameworks like Nose and JUnit.
-Experienced with version control systems such as Git and Mercurial.
-Experienced with CI systems like Jenkins and Travis CI.
+_Software Engineering_
 
-Web Development : Have developed applications using Backbone.js, and
-have dabbled with Ember.js and Angular.js.
-Fluent in developing cross-browser, W3C standards-compliant websites and
-web applications.
-Proficient in using external APIs such as those provided by Facebook,
-Twitter, and Google.
+-   Expert in Perl, Python, and Javascript.
+-   Fluent in Erlang, Go, and PHP.
+-   Proficient in C, Java, Clojure, and C++.
+-   Experienced with web development frameworks like Django, Flask, and
+    Laravel.
+-   Experienced with testing frameworks like Nose and JUnit.
+-   Experienced with version control systems such as Git and Mercurial.
+-   Experienced with CI systems like Jenkins and Travis CI.
 
-Systems Administration : Familiar with configuring Linux distributions
-such as Red Hat Enterprise Linux, CentOS, Debian, and Ubuntu.
-Experienced in administrating web servers such as Apache2, Nginx, and
-IIS, as well as WSGI application servers like Gunicorn, uWSGI, and
-mod_wsgi.
-Experienced with in-memory data systems like Redis and Memcached.
-Experienced with setting up and administrating MySQL and PostgreSQL
-databases.
-Experienced with build systems such as GNU Make and CMake.
-Experienced with using Puppet and Ansible to automate deployment.
-## Education
+_Web Development_
+
+-   Have developed applications using Backbone.js, and have dabbled with
+    Ember.js and Angular.js.
+-   Fluent in developing cross-browser, W3C standards-compliant websites
+    and web applications.
+-   Proficient in using external APIs such as those provided by
+    Facebook, Twitter, and Google.
+
+_Systems Administration_
+
+-   Familiar with configuring Linux distributions such as Red Hat
+    Enterprise Linux, CentOS, Debian, and Ubuntu.
+-   Experienced in administrating web servers such as Apache2, Nginx,
+    and IIS, as well as WSGI application servers like Gunicorn, uWSGI,
+    and mod_wsgi.
+-   Experienced with in-memory data systems like Redis and Memcached.
+-   Experienced with setting up and administrating MySQL and PostgreSQL
+    databases.
+-   Experienced with build systems such as GNU Make and CMake.
+-   Experienced with using Puppet and Ansible to automate deployment.
+
+
+Education
 
 April 2012
 
