@@ -7,7 +7,7 @@ PAUL WOOLCOCK
 
   Specialties: Understanding and Maintaining complex systems, Learning
   new languages
-  Languages: Java, Groovy, Python, Javascript, Rust, Go
+  Languages: Java, Groovy, Python, Rust, Javascript, Go
   BS in Computer Science from the University of Michigan-Flint
 
 ------------------------------------------------------------------------
@@ -82,11 +82,11 @@ Skills
 
 _Software Engineering_
 
--   Expert in Perl, Python, and Javascript.
--   Fluent in Erlang, Go, and PHP.
--   Proficient in C, Java, Clojure, and C++.
--   Experienced with web development frameworks like Django, Flask, and
-    Laravel.
+-   Expert in Java, Groovy, Python, and Javascript.
+-   Fluent in Rust, Erlang, Go, and PHP.
+-   Proficient in C, Clojure, and C++.
+-   Experienced with web development frameworks like RESTeasy, Django,
+    Flask, and Laravel.
 -   Experienced with testing frameworks like Nose and JUnit.
 -   Experienced with version control systems such as Git and Mercurial.
 -   Experienced with CI systems like Jenkins and Travis CI.
