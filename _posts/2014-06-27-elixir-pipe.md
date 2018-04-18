@@ -5,7 +5,7 @@ title: Elixir and the Pipe macro
 slug: elixir-pipe
 ---
 
-In my [Simple Python Generator](/posts/simple-python-generator-example.html) post, I showed how you could use generators to make a pipeline of functions to transform data. Today I am going to show how cool this same technique looks when used in [Elixir](http://elixir-lang.org).
+In my [Simple Python Generator](/posts/python-generators.html) post, I showed how you could use generators to make a pipeline of functions to transform data. Today I am going to show how cool this same technique looks when used in [Elixir](http://elixir-lang.org).
 
 In my python example, we assembled our pipeline like so:
 
